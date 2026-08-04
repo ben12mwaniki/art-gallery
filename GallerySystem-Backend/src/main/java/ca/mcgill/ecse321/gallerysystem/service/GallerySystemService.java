@@ -6,6 +6,7 @@ import java.sql.Date;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -37,6 +38,34 @@ public class GallerySystemService {
 	AdministratorRepository administratorRepository;
 	@Autowired 
 	ArtPieceRepository artPieceRepository;
+
+	// Basic email format check: something@something.something
+	private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+
+	/**
+	 * Trims a String field and throws a specific, descriptive error if it is
+	 * null or blank. Returns the trimmed value so callers can store the
+	 * cleaned-up version instead of the raw input (fixes stray whitespace,
+	 * e.g. tab/newline characters, from being silently persisted).
+	 */
+	private String requireNonBlank(String value, String fieldName) {
+		if (value == null || value.trim().isEmpty()) {
+			throw new IllegalArgumentException(fieldName + " cannot be empty.");
+		}
+		return value.trim();
+	}
+
+	/**
+	 * Trims and validates an email field: not blank, and matches a basic
+	 * email pattern. Returns the trimmed value.
+	 */
+	private String requireValidEmail(String email, String fieldName) {
+		String trimmed = requireNonBlank(email, fieldName);
+		if (!trimmed.matches(EMAIL_REGEX)) {
+			throw new IllegalArgumentException(fieldName + " is not a validly formatted email address: " + trimmed);
+		}
+		return trimmed;
+	}
 	
 	
 	
@@ -49,10 +78,27 @@ public class GallerySystemService {
 	
 	@Transactional 
 	public ArtPiece createArtPiece(String artName, Integer quantity, float price, Integer discountPercentage, Float commissionPercentage, String description, String artistEmail) {
-		 if(artName == null || quantity == null|| quantity <= 0 || price < 0|| discountPercentage == null || discountPercentage < 0 || description == null|| artistEmail == null || commissionPercentage == null || commissionPercentage < 0 ) {
-			 throw new IllegalArgumentException("Invalid Input!");
+		 artName = requireNonBlank(artName, "Art piece name");
+		 description = requireNonBlank(description, "Description");
+		 artistEmail = requireValidEmail(artistEmail, "Artist email");
+		 if (quantity == null || quantity <= 0) {
+			 throw new IllegalArgumentException("Quantity must be a positive number.");
 		 }
-		 
+		 if (price < 0) {
+			 throw new IllegalArgumentException("Price cannot be negative.");
+		 }
+		 if (discountPercentage == null || discountPercentage < 0) {
+			 throw new IllegalArgumentException("Discount percentage cannot be null or negative.");
+		 }
+		 if (commissionPercentage == null || commissionPercentage < 0) {
+			 throw new IllegalArgumentException("Commission percentage cannot be null or negative.");
+		 }
+
+		 Artist artist = artistRepository.findArtistByEmail(artistEmail);
+		 if (artist == null) {
+			 throw new IllegalArgumentException("No artist found with email: " + artistEmail);
+		 }
+
 		 ArtPiece artpiece = new ArtPiece();
 		 artpiece.setQuantity(quantity);
 		 artpiece.setPrice(price);
@@ -60,11 +106,9 @@ public class GallerySystemService {
 		 artpiece.setCommissionPercentage(commissionPercentage);
 		 artpiece.setArtName(artName);
 		 artpiece.setDescription(description);
-		 //artpiece.setArtID(artID);
-		 artpiece.setArtist(artistRepository.findArtistByEmail(artistEmail));
+		 artpiece.setArtist(artist);
 		 
 		artPieceRepository.save(artpiece);
-		//artistRepository.findArtistByEmail(artistEmail).getArtPieces().add(artpiece);
 		return artpiece;
 	}
 	
@@ -83,8 +127,12 @@ public class GallerySystemService {
 	
 	@Transactional
 	public Customer createCustomer(String userName,  String email, String address, String password) {
-		if(userName == null || email == null|| address == null || password == null) {
-			throw new IllegalArgumentException("Invalid Input!");
+		userName = requireNonBlank(userName, "Username");
+		email = requireValidEmail(email, "Email");
+		address = requireNonBlank(address, "Address");
+		password = requireNonBlank(password, "Password");
+		if (userRepository.findUserByEmail(email) != null) {
+			throw new IllegalArgumentException("A user with this email already exists: " + email);
 		}
 		Customer customer  = new Customer();
 		customer.setAddress(address);
@@ -131,8 +179,11 @@ public class GallerySystemService {
 	
 	@Transactional
 	public Artist createArtist(String userName,  String email, String password) {
-		if(userName == null || email == null || password == null) {
-			 throw new IllegalArgumentException("Invalid Input!");
+		userName = requireNonBlank(userName, "Username");
+		email = requireValidEmail(email, "Email");
+		password = requireNonBlank(password, "Password");
+		if (userRepository.findUserByEmail(email) != null) {
+			throw new IllegalArgumentException("A user with this email already exists: " + email);
 		}
 		Artist artist  = new Artist();
 		artist.setEmail(email);
@@ -169,8 +220,11 @@ public class GallerySystemService {
 	
 	@Transactional
 	public Administrator createAdministrator(String userName, String email, String password) {
-		if(userName == null || email == null || password == null) {
-			 throw new IllegalArgumentException("Invalid Input!");
+		userName = requireNonBlank(userName, "Username");
+		email = requireValidEmail(email, "Email");
+		password = requireNonBlank(password, "Password");
+		if (userRepository.findUserByEmail(email) != null) {
+			throw new IllegalArgumentException("A user with this email already exists: " + email);
 		}
 		Administrator administrator  = new Administrator();
 		administrator.setEmail(email);
@@ -189,7 +243,7 @@ public class GallerySystemService {
 	
 	@Transactional
 	public Administrator getAdministrator(String adminEmail) {
-		Administrator admin = administratorRepository.findArtistByEmail(adminEmail);
+		Administrator admin = administratorRepository.findAdministratorByEmail(adminEmail);
 		return admin;
 	}
 	@Transactional
@@ -211,7 +265,7 @@ public class GallerySystemService {
 	public ShoppingCart createShoppingCart(String customerEmail) {
 		Integer itemNumber = 0;
 		boolean isEmpty = true;
-		Set<SelectedItem> selectedItems = null;
+		Set<SelectedItem> selectedItems = new HashSet<SelectedItem>();
 		if(customerEmail == null) {
 			 throw new IllegalArgumentException("Invalid Inputs!");
 		}
@@ -227,12 +281,25 @@ public class GallerySystemService {
 	
 	@Transactional
 	public ShoppingCart appendItemToShoppingCart(Integer scID, String email){
-		ShoppingCart sc = shoppingCartRepository.findShoppingCartByCustomerEmail(email);
-		Set<SelectedItem> si = sc.getSelectedItem();
-		si.add(selectedItemRepository.findSelectedItemByItemID(scID));
-		shoppingCartRepository.findShoppingCartByCustomerEmail(email).setSelectedItem(si);
-		return sc;
+		if (scID == null) {
+			throw new IllegalArgumentException("Selected item ID cannot be null.");
+		}
+		email = requireValidEmail(email, "Customer email");
 
+		ShoppingCart sc = shoppingCartRepository.findShoppingCartByCustomerEmail(email);
+		if (sc == null) {
+			throw new IllegalArgumentException("No shopping cart found for customer with email: " + email);
+		}
+
+		SelectedItem item = selectedItemRepository.findSelectedItemByItemID(scID);
+		if (item == null) {
+			throw new IllegalArgumentException("No selected item found with ID: " + scID);
+		}
+
+		Set<SelectedItem> si = sc.getSelectedItem();
+		si.add(item);
+		shoppingCartRepository.save(sc);
+		return sc;
 	}
 
 	@Transactional
@@ -258,11 +325,24 @@ public class GallerySystemService {
 	
 	@Transactional
 	public SelectedItem createSelectedItem(Integer artID, Integer quantity) {
-		if(quantity == null || quantity <=0 || artID == null) {
-			 throw new IllegalArgumentException("Invalid Input!");
+		if (artID == null) {
+			throw new IllegalArgumentException("Art piece ID cannot be null.");
 		}
+		if (quantity == null || quantity <= 0) {
+			throw new IllegalArgumentException("Quantity must be a positive number.");
+		}
+
+		ArtPiece artPiece = artPieceRepository.findArtPieceByArtID(artID);
+		if (artPiece == null) {
+			throw new IllegalArgumentException("No art piece found with ID: " + artID);
+		}
+		if (quantity > artPiece.getQuantity()) {
+			throw new IllegalArgumentException(
+				"Requested quantity (" + quantity + ") exceeds available stock (" + artPiece.getQuantity() + ") for art piece ID: " + artID);
+		}
+
 		SelectedItem si = new SelectedItem();
-		si.setArtPiece(artPieceRepository.findArtPieceByArtID(artID));
+		si.setArtPiece(artPiece);
 		si.setItemQuantity(quantity);
 		selectedItemRepository.save(si);
 		return si;

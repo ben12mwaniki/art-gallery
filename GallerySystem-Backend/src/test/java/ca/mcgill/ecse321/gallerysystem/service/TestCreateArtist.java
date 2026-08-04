@@ -33,18 +33,21 @@ public class TestCreateArtist {
 	@InjectMocks
 	private GallerySystemService service;
 	
-	private static final String ARTIST_KEY = "TestArtist";
+	// Email that the mocked repositories will treat as "already registered"
+	private static final String EXISTING_EMAIL = "existing@mail.com";
 	
 	@BeforeEach
 	public void setMockOutput() {
-		lenient().when(artistDao.findArtistByEmail(anyString())).thenAnswer((InvocationOnMock invocation) -> {
-			if (invocation.getArgument(0).equals(ARTIST_KEY)) {
-				Artist artist = new Artist();
-				artist.setEmail(ARTIST_KEY);
-				return artist;
-			} else {
-				return null;
+		// Simulates the DB already containing a user with EXISTING_EMAIL.
+		// Any other email is treated as "not found" -> returns null.
+		lenient().when(userDao.findUserByEmail(anyString())).thenAnswer((InvocationOnMock invocation) -> {
+			String requestedEmail = invocation.getArgument(0);
+			if (requestedEmail != null && requestedEmail.equals(EXISTING_EMAIL)) {
+				Artist existing = new Artist();
+				existing.setEmail(EXISTING_EMAIL);
+				return existing;
 			}
+			return null;
 		});
 		// Whenever anything is saved, just return the parameter object
 		Answer<?> returnParameterAsAnswer = (InvocationOnMock invocation) -> {
@@ -55,7 +58,7 @@ public class TestCreateArtist {
 	}
 	
 	/**
-	 * Test to create a valid artist with valid username, email, and password. 
+	 * Test to create a valid artist with valid, distinct username, email, and password. 
 	 */
     @Test
 	public void testCreateArtist() {
@@ -75,8 +78,8 @@ public class TestCreateArtist {
 	
 	
 	/** 
-	 * Checks the resulf of testCreatArtist by checking that the name of the created artist corresponds to the 
-	 * given input provided in the parameters below. 
+	 * Checks the result of testCreateArtist by checking that the fields of the created artist 
+	 * correspond to the given input.
 	 * 
 	 * @param artist The artist object which the test would be performed on. 
 	 * @param userName	The username to be used to check the validity of the artist.
@@ -91,9 +94,9 @@ public class TestCreateArtist {
 	}
 	
 	/**
-	 * Test to create a artist with information set to Null and see if the 
-	 * service class will handle this exception properly. It should not create any artist
-	 * and throw a message "Invalid Input!"
+	 * Test to create an artist with all fields set to null. The service is expected to 
+	 * reject this and throw a specific error identifying the missing field (username is
+	 * validated first, so that is the error we expect here).
 	 */
 	@Test
 	public void testCreateArtistNull() {
@@ -109,25 +112,77 @@ public class TestCreateArtist {
 			error = e.getMessage();
 		}
 		assertNull(artist);
-		assertEquals("Invalid Input!", error);
+		assertEquals("Username cannot be empty.", error);
+	}
+
+	/**
+	 * Test to create an artist with a blank (whitespace-only) username. This used to pass
+	 * the old null-only check; now it should be rejected since blank values are trimmed
+	 * and treated as empty.
+	 */
+	@Test
+	public void testCreateArtistBlankUsername() {
+		String error = null;
+		Artist artist = null;
+		try {
+			artist = service.createArtist("   ", "john@mail.com", "pass");
+		} catch (IllegalArgumentException e) {
+			error = e.getMessage();
+		}
+		assertNull(artist);
+		assertEquals("Username cannot be empty.", error);
+	}
+
+	/**
+	 * Test to create an artist with a malformed email (no domain). Should be rejected by
+	 * the new email format validation.
+	 */
+	@Test
+	public void testCreateArtistInvalidEmailFormat() {
+		String error = null;
+		Artist artist = null;
+		try {
+			artist = service.createArtist("John", "not-an-email", "pass");
+		} catch (IllegalArgumentException e) {
+			error = e.getMessage();
+		}
+		assertNull(artist);
+		assertEquals("Email is not a validly formatted email address: not-an-email", error);
+	}
+
+	/**
+	 * Test that leading/trailing whitespace on otherwise-valid fields is trimmed rather
+	 * than stored as-is (regression test for the "\t" bug found via manual testing).
+	 */
+	@Test
+	public void testCreateArtistTrimsWhitespace() {
+		Artist artist = null;
+		try {
+			artist = service.createArtist("  John  ", "  john@mail.com  ", "  pass  ");
+		} catch (IllegalArgumentException e) {
+			fail();
+		}
+		checkResultCreateArtist(artist, "John", "john@mail.com", "pass");
 	}
 	
 	/**
-	 * Test to create two artists with the same email (valid case).
+	 * Test to create two artists with the same email. Since email is the primary key for
+	 * all User subtypes, this must now be rejected - this is a regression test for a bug
+	 * where a second createArtist call with a duplicate email would silently overwrite
+	 * the first artist's data instead of being rejected.
 	 */
 	@Test
 	public void testCreate2ArtistSameEmail() {
-		assertEquals(0, service.getAllArtists().size());
-		
-		String userName = "John";
 		String userName2 = "Adam";
-		String email = "john@mail.com";
-		String password = "pass";
-		Artist artist = null;
+		String password2 = "pass2";
 		Artist artist2 = null;
-		artist = service.createArtist(userName, email, password);
-		artist2 = service.createArtist(userName2, email, password);
-		checkResultCreateArtist(artist, userName, email, password);
-		checkResultCreateArtist(artist2, userName2, email, password);
+		String error = null;
+		try {
+			artist2 = service.createArtist(userName2, EXISTING_EMAIL, password2);
+		} catch (IllegalArgumentException e) {
+			error = e.getMessage();
+		}
+		assertNull(artist2);
+		assertEquals("A user with this email already exists: " + EXISTING_EMAIL, error);
 	}
 }
