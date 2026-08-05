@@ -3,7 +3,6 @@ package ca.mcgill.ecse321.gallerysystem.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
@@ -54,21 +53,6 @@ public class TestGetArtist {
 		lenient().when(artistDao.save(any(Artist.class))).thenAnswer(returnParameterAsAnswer);
 		lenient().when(userDao.save(any(User.class))).thenAnswer(returnParameterAsAnswer);
 	}
-    
-	public void testCreateArtist() {
-		assertEquals(0, service.getAllArtists().size());
-		
-		String userName = "John";
-		String email = "john@mail.com";
-		String password = "pass";
-		Artist artist = null;
-		try {
-			artist = service.createArtist(userName, email, password);
-		}catch (IllegalArgumentException e) {
-			fail();
-		}
-	}
-	
 	/**
 	 * Test to get an existing artist with provided email and verify. 
 	 */
