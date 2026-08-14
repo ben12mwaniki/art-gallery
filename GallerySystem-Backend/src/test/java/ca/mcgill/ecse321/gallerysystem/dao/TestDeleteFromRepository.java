@@ -2,11 +2,6 @@ package ca.mcgill.ecse321.gallerysystem.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-
-
-
-
 import java.sql.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import ca.mcgill.ecse321.gallerysystem.model.*;
-
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -42,7 +36,6 @@ public class TestDeleteFromRepository {
 	private CustomerRepository customerRepository;
 	@Autowired
 	private AdministratorRepository administratorRepository;
-	
 
 	@AfterEach
 	public void clearDatabase() {
@@ -54,18 +47,18 @@ public class TestDeleteFromRepository {
 		artPieceRepository.deleteAll();
 		orderRepository.deleteAll();
 		selectedItemRepository.deleteAll();
-		
+
 	}
-	
+
 	@Test
 	public void testDeleteCustomer() {
-		
+
 		Customer customer = new Customer();
-	
+
 		String email = "email";
 		String password = "password";
 		String name = "name";
-		
+
 		customer.setEmail(email);
 		customer.setPassword(password);
 		customer.setUserName(name);
@@ -73,18 +66,17 @@ public class TestDeleteFromRepository {
 		customerRepository.save(customer);
 		customerRepository.deleteById(customer.getEmail());
 		assertEquals(customerRepository.count(), 0);
-		
-		
+
 	}
-	
+
 	@Test
 	public void testDeleteArtist() {
 		Artist artist = new Artist();
-		
+
 		String email = "artist_email";
 		String password = "password";
 		String name = "name";
-		
+
 		artist.setEmail(email);
 		artist.setPassword(password);
 		artist.setUserName(name);
@@ -93,13 +85,13 @@ public class TestDeleteFromRepository {
 		assertEquals(artistRepository.count(), 0);
 
 	}
-	
+
 	@Test
 	public void testDeleteArtPiece() {
 		ArtPiece art = new ArtPiece();
 		Artist artist = new Artist();
 		Set<ArtPiece> artPieces = new HashSet<ArtPiece>();
-		
+
 		String email = "artist_email";
 		String password = "password";
 		String name = "name";
@@ -109,12 +101,11 @@ public class TestDeleteFromRepository {
 		Integer quantity = 1;
 		String artName = "artName";
 
-		
 		artist.setEmail(email);
 		artist.setPassword(password);
 		artist.setUserName(name);
 		artistRepository.save(artist);
-		
+
 		art.setDescription("");
 		art.setDiscountPercentage(discount);
 		art.setPrice(price);
@@ -123,29 +114,27 @@ public class TestDeleteFromRepository {
 		art.setArtName(artName);
 		art.setArtist(artist);
 		artPieceRepository.save(art);
-		
+
 		artPieces.add(art);
 		artPieceRepository.deleteById(art.getArtID());
 		assertEquals(artPieceRepository.count(), 0);
-		
-	
-		
+
 	}
-	
+
 	@Test
 	public void testDeleteShoppingCart() {
-		
+
 		Artist artist = new Artist();
-		
+
 		String artist_email = "artist_email";
 		String artist_password = "password";
 		String artist_name = "name";
-		
+
 		artist.setEmail(artist_email);
 		artist.setPassword(artist_password);
 		artist.setUserName(artist_name);
 		artistRepository.save(artist);
-	
+
 		ArtPiece art = new ArtPiece();
 		Integer artID = 1;
 		Integer discount = 70;
@@ -160,7 +149,7 @@ public class TestDeleteFromRepository {
 		art.setQuantity(quantity);
 		art.setArtist(artist);
 		artPieceRepository.save(art);
-		
+
 		Customer customer = new Customer();
 		String customer_email = "customer_email";
 		String customer_password = "password";
@@ -169,7 +158,7 @@ public class TestDeleteFromRepository {
 		customer.setPassword(customer_password);
 		customer.setUserName(customer_name);
 		customerRepository.save(customer);
-		
+
 		SelectedItem item = new SelectedItem();
 		Integer itemID = 78;
 		Integer itemQuantity = 20;
@@ -179,11 +168,10 @@ public class TestDeleteFromRepository {
 		selectedItemRepository.save(item);
 		Set<SelectedItem> items = new HashSet<SelectedItem>();
 		items.add(item);
-		
+
 		ShoppingCart cart = new ShoppingCart();
 		Integer cartID = 1;
 
-		
 		cart.setCartID(cartID);
 		cart.setCustomer(customer);
 		cart.setIsEmpty(true);
@@ -192,11 +180,9 @@ public class TestDeleteFromRepository {
 		shoppingCartRepository.save(cart);
 		shoppingCartRepository.deleteById(cart.getCartID());
 		assertEquals(shoppingCartRepository.count(), 0);
-		
 
-		
 	}
-	
+
 	@Test
 	public void testDeleteOrder() {
 
@@ -208,15 +194,14 @@ public class TestDeleteFromRepository {
 		customer.setPassword(customer_password);
 		customer.setUserName(customer_name);
 		customerRepository.save(customer);
-		
-		
+
 		ShoppingCart cart = new ShoppingCart();
 		Integer cartID = 1;
 		cart.setCartID(cartID);
 		cart.setCustomer(customer);
 		cart.setIsEmpty(true);
 		shoppingCartRepository.save(cart);
-		
+
 		Order order = new Order();
 		Integer year = 2020;
 		Integer month = 10;
@@ -230,11 +215,7 @@ public class TestDeleteFromRepository {
 		orderRepository.save(order);
 		orderRepository.deleteById(order.getOrderNumber());
 		assertEquals(orderRepository.count(), 0);
-		
+
 	}
-	
-	
-	
+
 }
-
-

@@ -1,0 +1,20 @@
+
+services:
+  gallery-postgres:
+    container_name: gallery-postgres
+    image: postgres:16
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: gallery_user
+      POSTGRES_PASSWORD: gallerypassword
+      POSTGRES_DB: gallerydb
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - gallery_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  gallery_postgres_data:
