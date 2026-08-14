@@ -127,7 +127,7 @@ Test reports are generated at `build/reports/tests/test/index.html`.
 
 ## Project Status
 
-Actively maintained. Currently working through a full backend validation and test-coverage pass — hardening input validation across all create/update endpoints, closing data-integrity gaps (e.g. enforcing unique emails, verifying foreign-key lookups before persisting), and rebuilding the JUnit test suite to match.
+Actively maintained. Currently completing a backend validation and test-coverage pass while migrating the Vue.js frontend to Vite. Backend work includes hardening input validation across create/update operations, closing data-integrity gaps (e.g. enforcing unique emails and validating entity relationships), and rebuilding the JUnit test suite to match the current implementation.
 
 ## Contributors
 - Ben Mwaniki
