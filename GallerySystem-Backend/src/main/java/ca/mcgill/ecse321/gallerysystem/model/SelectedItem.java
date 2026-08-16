@@ -4,15 +4,15 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-
-
 import javax.persistence.ManyToOne;
 
 @Entity
 public class SelectedItem {
+
 	private Integer itemID;
 	private Integer quantity;
 	private ArtPiece artPiece;
+	private ShoppingCart shoppingCart;
 
 	public void setItemID(Integer value) {
 		this.itemID = value;
@@ -24,7 +24,14 @@ public class SelectedItem {
 		return this.itemID;
 	}
 
-	
+	@ManyToOne(optional = false)
+	public ShoppingCart getShoppingCart() {
+		return this.shoppingCart;
+	}
+
+	public void setShoppingCart(ShoppingCart shoppingCart) {
+		this.shoppingCart = shoppingCart;
+	}
 
 	public void setItemQuantity(Integer value) {
 		this.quantity = value;
@@ -34,9 +41,7 @@ public class SelectedItem {
 		return this.quantity;
 	}
 
-	
-
-	@ManyToOne(optional=false)
+	@ManyToOne(optional = false)
 	public ArtPiece getArtPiece() {
 		return this.artPiece;
 	}
@@ -44,5 +49,4 @@ public class SelectedItem {
 	public void setArtPiece(ArtPiece artPiece) {
 		this.artPiece = artPiece;
 	}
-
 }
