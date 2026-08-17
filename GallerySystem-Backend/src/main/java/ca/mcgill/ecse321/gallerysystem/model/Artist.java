@@ -10,11 +10,11 @@ import javax.persistence.OneToMany;
 
 @Entity
 public class Artist extends User {
-	
-	private String userRole = "artist";
-	//private Set<ArtPiece> artPieces;
 
-	 public void setUserRole(String value) {
+	private String userRole = "artist";
+	private Set<ArtPiece> artPieces;
+
+	public void setUserRole(String value) {
 		this.userRole = value;
 	}
 
@@ -22,13 +22,13 @@ public class Artist extends User {
 		return this.userRole;
 	}
 
-//	@OneToMany(mappedBy = "artist", cascade = { CascadeType.ALL }, fetch = FetchType.EAGER)
-//	public Set<ArtPiece> getArtPieces() {
-//		return this.artPieces;
-//	}
-//
-//	public void setArtPieces(Set<ArtPiece> artPieces) {
-//		this.artPieces = artPieces;
-//	}
+	@OneToMany(mappedBy = "artist", cascade = { CascadeType.ALL }, fetch = FetchType.EAGER)
+	public Set<ArtPiece> getArtPieces() {
+		return this.artPieces;
+	}
+
+	public void setArtPieces(Set<ArtPiece> artPieces) {
+		this.artPieces = artPieces;
+	}
 
 }

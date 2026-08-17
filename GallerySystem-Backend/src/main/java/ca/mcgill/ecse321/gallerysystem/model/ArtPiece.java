@@ -9,17 +9,18 @@ import javax.persistence.Transient;
 
 @Entity
 public class ArtPiece {
+
 	private Integer quantity;
 	private float price;
 	private String artName;
 	private Integer discountPercentage;
 	private String description;
 	private float commissionPercentage;
+	private boolean active;
 
 	private Integer artID;
 	private Artist artist;
-	
-	
+
 	public void setQuantity(Integer value) {
 		this.quantity = value;
 	}
@@ -35,7 +36,7 @@ public class ArtPiece {
 	public float getPrice() {
 		return this.price;
 	}
-	
+
 	public void setCommissionPercentage(float value) {
 		this.commissionPercentage = value;
 	}
@@ -52,8 +53,6 @@ public class ArtPiece {
 		return this.discountPercentage;
 	}
 
-	
-
 	public void setArtName(String value) {
 		this.artName = value;
 	}
@@ -61,7 +60,6 @@ public class ArtPiece {
 	public String getArtName() {
 		return this.artName;
 	}
-
 
 	public void setDescription(String value) {
 		this.description = value;
@@ -71,6 +69,13 @@ public class ArtPiece {
 		return this.description;
 	}
 
+	public void setActive(boolean value) {
+		this.active = value;
+	}
+
+	public boolean isActive() {
+		return this.active;
+	}
 
 	public void setArtID(Integer value) {
 		this.artID = value;
@@ -82,12 +87,11 @@ public class ArtPiece {
 		return this.artID;
 	}
 
-	
 	@ManyToOne(optional = false)
 	public Artist getArtist() {
 		return this.artist;
 	}
-	
+
 	@Transient
 	public String getArtpieceArtist() {
 		return this.artist.getUserName();
@@ -96,5 +100,4 @@ public class ArtPiece {
 	public void setArtist(Artist artist) {
 		this.artist = artist;
 	}
-
 }
