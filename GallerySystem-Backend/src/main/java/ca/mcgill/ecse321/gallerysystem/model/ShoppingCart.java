@@ -5,6 +5,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 
+import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.OneToMany;
 import javax.persistence.Id;
@@ -17,9 +18,9 @@ public class ShoppingCart {
 	private boolean isEmpty;
 	private Customer customer;
 
-	private Set<SelectedItem> selectedItem;
+	private Set<SelectedItem> selectedItem = new HashSet<>();
 
-	@OneToMany(fetch = FetchType.EAGER, orphanRemoval = true)
+	@OneToMany(mappedBy = "shoppingCart", fetch = FetchType.EAGER, orphanRemoval = true)
 	public Set<SelectedItem> getSelectedItem() {
 		return this.selectedItem;
 	}

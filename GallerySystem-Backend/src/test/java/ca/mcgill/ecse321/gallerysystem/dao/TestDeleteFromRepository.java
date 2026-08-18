@@ -6,6 +6,8 @@ import java.sql.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.EntityManager;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +21,8 @@ import ca.mcgill.ecse321.gallerysystem.model.*;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class TestDeleteFromRepository {
+	@Autowired
+	private EntityManager entityManager;
 
 	@Autowired
 	private SelectedItemRepository selectedItemRepository;
@@ -105,6 +109,7 @@ public class TestDeleteFromRepository {
 	}
 
 	@Test
+	@Transactional
 	public void testDeleteArtPiece() {
 
 		Artist artist = new Artist();
@@ -113,7 +118,7 @@ public class TestDeleteFromRepository {
 		artist.setPassword("password");
 		artist.setUserName("name");
 
-		artistRepository.save(artist);
+		artist = artistRepository.save(artist);
 
 		ArtPiece art = new ArtPiece();
 		art.setDescription("Test art piece");
@@ -133,6 +138,8 @@ public class TestDeleteFromRepository {
 
 		artPieceRepository.deleteById(art.getArtID());
 
+		entityManager.flush();
+
 		assertEquals(0, artPieceRepository.count());
 	}
 
@@ -145,7 +152,7 @@ public class TestDeleteFromRepository {
 		artist.setPassword("password");
 		artist.setUserName("name");
 
-		artistRepository.save(artist);
+		artist = artistRepository.save(artist);
 
 		ArtPiece art = new ArtPiece();
 		art.setArtName("artName");
@@ -166,29 +173,41 @@ public class TestDeleteFromRepository {
 		customer.setPassword("password");
 		customer.setUserName("name");
 
-		customerRepository.save(customer);
+		customer = customerRepository.save(customer);
+
+		/*
+		 * Create and save the cart before the SelectedItem because
+		 * SelectedItem.shoppingCart is a required relationship.
+		 */
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart.setIsEmpty(true);
+		cart.setSelectedItem(new HashSet<SelectedItem>());
+		cart.setItemNumber(0);
+
+		/*
+		 * cartID is @GeneratedValue and must not be assigned manually.
+		 */
+		cart = shoppingCartRepository.save(cart);
 
 		SelectedItem item = new SelectedItem();
 		item.setArtPiece(art);
 		item.setItemQuantity(20);
+		item.setShoppingCart(cart);
 
 		/*
 		 * itemID is @GeneratedValue and must not be assigned manually.
 		 */
 		item = selectedItemRepository.save(item);
 
-		Set<SelectedItem> items = new HashSet<>();
-		items.add(item);
-
-		ShoppingCart cart = new ShoppingCart();
-		cart.setCustomer(customer);
-		cart.setIsEmpty(true);
-		cart.setSelectedItem(items);
-		cart.setItemNumber(items.size());
-
 		/*
-		 * cartID is @GeneratedValue and must not be assigned manually.
+		 * Keep both sides of the ShoppingCart-SelectedItem relationship
+		 * synchronized.
 		 */
+		cart.getSelectedItem().add(item);
+		cart.setItemNumber(1);
+		cart.setIsEmpty(false);
+
 		cart = shoppingCartRepository.save(cart);
 
 		shoppingCartRepository.deleteById(cart.getCartID());

@@ -9,17 +9,18 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
 import ca.mcgill.ecse321.gallerysystem.model.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
+@Transactional
 public class TestRepositoryPersistence {
 
 	@Autowired
@@ -49,28 +50,6 @@ public class TestRepositoryPersistence {
 	@Autowired
 	private AdministratorRepository administratorRepository;
 
-	@AfterEach
-	public void clearDatabase() {
-		/*
-		 * Delete in dependency order so that foreign-key constraints are not
-		 * violated between tests.
-		 *
-		 * Order -> ShoppingCart, Customer
-		 * ShoppingCart -> Customer, SelectedItem
-		 * SelectedItem -> ArtPiece
-		 * ArtPiece -> Artist
-		 * Artist/Customer/Administrator -> User
-		 */
-		orderRepository.deleteAll();
-		shoppingCartRepository.deleteAll();
-		selectedItemRepository.deleteAll();
-		artPieceRepository.deleteAll();
-		customerRepository.deleteAll();
-		artistRepository.deleteAll();
-		administratorRepository.deleteAll();
-		userRepository.deleteAll();
-	}
-
 	@Test
 	public void testPersistAndLoadCustomer() {
 
@@ -81,7 +60,7 @@ public class TestRepositoryPersistence {
 		customer.setUserName("customer");
 		customer.setAddress("123 Main Street");
 
-		customerRepository.save(customer);
+		customer = customerRepository.save(customer);
 
 		/*
 		 * Force Hibernate to write to PostgreSQL and clear the persistence
@@ -109,7 +88,7 @@ public class TestRepositoryPersistence {
 		artist.setPassword("password");
 		artist.setUserName("artist");
 
-		artistRepository.save(artist);
+		artist = artistRepository.save(artist);
 
 		entityManager.flush();
 		entityManager.clear();
@@ -131,7 +110,7 @@ public class TestRepositoryPersistence {
 		administrator.setPassword("password");
 		administrator.setUserName("admin");
 
-		administratorRepository.save(administrator);
+		administrator = administratorRepository.save(administrator);
 
 		entityManager.flush();
 		entityManager.clear();
@@ -153,7 +132,7 @@ public class TestRepositoryPersistence {
 		artist.setPassword("password");
 		artist.setUserName("artist");
 
-		artistRepository.save(artist);
+		artist = artistRepository.save(artist);
 
 		ArtPiece art = new ArtPiece();
 		art.setArtName("Mona Lisa");
@@ -201,7 +180,7 @@ public class TestRepositoryPersistence {
 		artist.setPassword("password");
 		artist.setUserName("artist");
 
-		artistRepository.save(artist);
+		artist = artistRepository.save(artist);
 
 		ArtPiece art = new ArtPiece();
 		art.setArtName("Test Art");
@@ -214,14 +193,32 @@ public class TestRepositoryPersistence {
 
 		art = artPieceRepository.save(art);
 
+		Customer customer = new Customer();
+		customer.setEmail("customer@example.com");
+		customer.setPassword("password");
+		customer.setUserName("customer");
+		customer.setAddress("123 Main Street");
+
+		customer = customerRepository.save(customer);
+
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart.setIsEmpty(false);
+		cart.setItemNumber(Integer.valueOf(1));
+		cart.setSelectedItem(new HashSet<SelectedItem>());
+
+		cart = shoppingCartRepository.save(cart);
+
 		SelectedItem item = new SelectedItem();
 		item.setArtPiece(art);
 		item.setItemQuantity(Integer.valueOf(2));
+		item.setShoppingCart(cart);
 
-		/*
-		 * itemID is @GeneratedValue, so capture the returned entity.
-		 */
 		item = selectedItemRepository.save(item);
+
+		// Keep both sides of the relationship synchronized
+		cart.getSelectedItem().add(item);
+		shoppingCartRepository.save(cart);
 
 		entityManager.flush();
 		Integer itemID = item.getItemID();
@@ -238,6 +235,11 @@ public class TestRepositoryPersistence {
 		assertEquals(
 				art.getArtID(),
 				savedItem.getArtPiece().getArtID());
+
+		assertNotNull(savedItem.getShoppingCart());
+		assertEquals(
+				cart.getCartID(),
+				savedItem.getShoppingCart().getCartID());
 	}
 
 	@Test
@@ -250,7 +252,7 @@ public class TestRepositoryPersistence {
 		customer.setUserName("customer");
 		customer.setAddress("123 Main Street");
 
-		customerRepository.save(customer);
+		customer = customerRepository.save(customer);
 
 		Artist artist = new Artist();
 
@@ -258,7 +260,7 @@ public class TestRepositoryPersistence {
 		artist.setPassword("password");
 		artist.setUserName("artist");
 
-		artistRepository.save(artist);
+		artist = artistRepository.save(artist);
 
 		ArtPiece art = new ArtPiece();
 		art.setArtName("Test Art");
@@ -271,25 +273,27 @@ public class TestRepositoryPersistence {
 
 		art = artPieceRepository.save(art);
 
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart.setIsEmpty(false);
+
+		/*
+		 * cartID is @GeneratedValue, so capture the returned entity.
+		 */
+		cart = shoppingCartRepository.save(cart);
+
 		SelectedItem item = new SelectedItem();
 		item.setArtPiece(art);
 		item.setItemQuantity(Integer.valueOf(2));
+		item.setShoppingCart(cart);
 
 		item = selectedItemRepository.save(item);
 
 		Set<SelectedItem> items = new HashSet<>();
 		items.add(item);
 
-		ShoppingCart cart = new ShoppingCart();
-		cart.setCustomer(customer);
-		cart.setIsEmpty(false);
 		cart.setSelectedItem(items);
 		cart.setItemNumber(Integer.valueOf(items.size()));
-
-		/*
-		 * cartID is @GeneratedValue, so capture the returned entity.
-		 */
-		cart = shoppingCartRepository.save(cart);
 
 		entityManager.flush();
 		Integer cartID = cart.getCartID();
@@ -309,7 +313,7 @@ public class TestRepositoryPersistence {
 				savedCart.getCustomer().getEmail());
 
 		assertNotNull(savedCart.getSelectedItem());
-		assertEquals(Integer.valueOf(1), savedCart.getSelectedItem().size());
+		assertEquals(1, savedCart.getSelectedItem().size());
 
 		SelectedItem savedItem = savedCart.getSelectedItem().iterator().next();
 
@@ -330,7 +334,7 @@ public class TestRepositoryPersistence {
 		customer.setUserName("customer");
 		customer.setAddress("123 Main Street");
 
-		customerRepository.save(customer);
+		customer = customerRepository.save(customer);
 
 		ShoppingCart cart = new ShoppingCart();
 		cart.setCustomer(customer);
@@ -352,7 +356,7 @@ public class TestRepositoryPersistence {
 		order.setCustomer(customer);
 		order.setShoppingCart(cart);
 
-		orderRepository.save(order);
+		order = orderRepository.save(order);
 
 		entityManager.flush();
 		entityManager.clear();
