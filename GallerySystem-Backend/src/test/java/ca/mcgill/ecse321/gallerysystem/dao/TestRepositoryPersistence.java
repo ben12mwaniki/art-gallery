@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ca.mcgill.ecse321.gallerysystem.model.*;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.profiles.active=test")
 @Transactional
 public class TestRepositoryPersistence {
 
