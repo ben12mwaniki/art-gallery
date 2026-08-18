@@ -5,6 +5,7 @@ import javax.persistence.Entity;
 
 import javax.persistence.Id;
 import java.sql.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.ManyToOne;
@@ -19,7 +20,7 @@ public class Order {
 	private Date orderDate;
 	private ShoppingCart shoppingCart;
 	private Customer customer;
-	private Set<OrderItem> orderItems;
+	private Set<OrderItem> orderItems = new HashSet<>();
 
 	public void setOrderNumber(Integer value) {
 		this.orderNumber = value;
