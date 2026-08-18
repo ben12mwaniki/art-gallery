@@ -16,8 +16,7 @@ task stage () {
 }
 
 repositories {
-    // Use jcenter for resolving dependencies.
-    // You can declare any Maven/Ivy/file repository here.
+    // Use mavenCentral() for resolving dependencies.
     mavenCentral()
 }
 
