@@ -1,6 +1,5 @@
 package ca.mcgill.ecse321.gallerysystem.service;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -46,7 +45,6 @@ public class TestCreateShoppingCart {
 	@InjectMocks
 	private GallerySystemService service;
 
-
 	@BeforeEach
 	public void setMockOutput() {
 
@@ -57,7 +55,7 @@ public class TestCreateShoppingCart {
 		lenient().when(customerDao.save(any(Customer.class))).thenAnswer(returnParameterAsAnswer);
 		lenient().when(shoppingCartDao.save(any(ShoppingCart.class))).thenAnswer(returnParameterAsAnswer);
 		lenient().when(userDao.save(any(User.class))).thenAnswer(returnParameterAsAnswer);
-    }
+	}
 
 	/**
 	 * Test to create a Shopping cart with a valid customer email. Confirms
@@ -73,22 +71,16 @@ public class TestCreateShoppingCart {
 		customer.setEmail(customerEmail);
 
 		lenient().when(customerDao.findCustomerByEmail(customerEmail)).thenReturn(customer);
-
-		ShoppingCart sc = null;
-		try {
-			sc = service.createShoppingCart(customerEmail);
-		} catch (IllegalArgumentException e) {
-			fail();
-		}
+		ShoppingCart sc = service.createShoppingCart(customerEmail);
 
 		assertNotNull(sc);
 		assertEquals(customer, sc.getCustomer());
-		assertEquals(Integer.valueOf(0), sc.getItemNumber());
-		assertEquals(true, sc.isIsEmpty());
+		assertEquals(0, sc.getItemCount());
+		assertEquals(true, sc.isEmpty());
 
 		// Regression check: selectedItem must be a real (empty) Set, not null
-		assertNotNull(sc.getSelectedItem());
-		assertEquals(0, sc.getSelectedItem().size());
+		assertNotNull(sc.getSelectedItems());
+		assertEquals(0, sc.getSelectedItems().size());
 	}
 
 	/**
@@ -125,9 +117,7 @@ public class TestCreateShoppingCart {
 
 		ShoppingCart sc = new ShoppingCart();
 		sc.setCustomer(customer);
-		sc.setItemNumber(0);
-		sc.setIsEmpty(true);
-		sc.setSelectedItem(new HashSet<SelectedItem>());
+		sc.setSelectedItems(new HashSet<SelectedItem>());
 
 		SelectedItem item = new SelectedItem();
 
@@ -138,6 +128,6 @@ public class TestCreateShoppingCart {
 			service.appendItemToShoppingCart(1, customerEmail);
 		});
 
-		assertEquals(1, sc.getSelectedItem().size());
+		assertEquals(1, sc.getSelectedItems().size());
 	}
 }

@@ -181,9 +181,7 @@ public class TestDeleteFromRepository {
 		 */
 		ShoppingCart cart = new ShoppingCart();
 		cart.setCustomer(customer);
-		cart.setIsEmpty(true);
-		cart.setSelectedItem(new HashSet<SelectedItem>());
-		cart.setItemNumber(0);
+		cart.setSelectedItems(new HashSet<SelectedItem>());
 
 		/*
 		 * cartID is @GeneratedValue and must not be assigned manually.
@@ -204,9 +202,7 @@ public class TestDeleteFromRepository {
 		 * Keep both sides of the ShoppingCart-SelectedItem relationship
 		 * synchronized.
 		 */
-		cart.getSelectedItem().add(item);
-		cart.setItemNumber(1);
-		cart.setIsEmpty(false);
+		cart.getSelectedItems().add(item);
 
 		cart = shoppingCartRepository.save(cart);
 
@@ -252,7 +248,6 @@ public class TestDeleteFromRepository {
 		 * cartID is @GeneratedValue and must not be assigned manually.
 		 */
 		cart.setCustomer(customer);
-		cart.setIsEmpty(true);
 
 		cart = shoppingCartRepository.save(cart);
 

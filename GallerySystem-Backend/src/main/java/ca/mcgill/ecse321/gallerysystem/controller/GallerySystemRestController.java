@@ -286,8 +286,8 @@ public class GallerySystemRestController {
 		if (sc == null) {
 			throw new IllegalArgumentException("There is no such Shopping Cart!");
 		}
-		ShoppingCartDto scDto = new ShoppingCartDto(sc.getItemNumber(), sc.getCartID(), sc.isIsEmpty(),
-				sc.getCustomer(), sc.getSelectedItem());
+		ShoppingCartDto scDto = new ShoppingCartDto(sc.getItemCount(), sc.getCartID(), sc.isEmpty(),
+				sc.getCustomer(), sc.getSelectedItems());
 
 		return scDto;
 	}
@@ -297,10 +297,10 @@ public class GallerySystemRestController {
 		return service.getAllOrder().stream().map(o -> convertToDto(o)).collect(Collectors.toList());
 	}
 
-	@PostMapping(value = { "/order/{customer}>", "/order/{customer}/" })
-	public OrderDto createOrder(Integer ordernumber, Date orderDate, ShoppingCart shoppingCart,
-			@RequestParam("customer") Customer customer) throws IllegalArgumentException {
-		Order order = service.createOrder(ordernumber, orderDate, shoppingCart, customer);
+	public OrderDto checkout(
+			@PathVariable("customerEmail") String customerEmail) throws IllegalArgumentException {
+
+		Order order = service.checkout(customerEmail);
 		return convertToDto(order);
 	}
 
@@ -331,7 +331,6 @@ public class GallerySystemRestController {
 		return service.getAllSelectedItem().stream().map(si -> convertToDto(si)).collect(Collectors.toList());
 
 	}
-
 
 	@PostMapping(value = { "/SelectedItem/{artID}", "/SelectedItem/{artID}/" })
 	public SelectedItemDto createSelectedItem(@PathVariable("artID") Integer artID, @RequestParam Integer quantity)

@@ -10,31 +10,27 @@ import java.util.Set;
 import javax.persistence.OneToMany;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
+import javax.persistence.Transient;
 
 @Entity
 public class ShoppingCart {
-	private Integer itemNumber;
 	private Integer cartID;
-	private boolean isEmpty;
 	private Customer customer;
 
-	private Set<SelectedItem> selectedItem = new HashSet<>();
+	private Set<SelectedItem> selectedItems = new HashSet<>();
 
 	@OneToMany(mappedBy = "shoppingCart", fetch = FetchType.EAGER, orphanRemoval = true)
-	public Set<SelectedItem> getSelectedItem() {
-		return this.selectedItem;
+	public Set<SelectedItem> getSelectedItems() {
+		return this.selectedItems;
 	}
 
-	public void setSelectedItem(Set<SelectedItem> selectedItems) {
-		this.selectedItem = selectedItems;
+	public void setSelectedItems(Set<SelectedItem> selectedItems) {
+		this.selectedItems = selectedItems;
 	}
 
-	public void setIsEmpty(boolean value) {
-		this.isEmpty = value;
-	}
-
-	public boolean isIsEmpty() {
-		return this.isEmpty;
+	@Transient
+	public boolean isEmpty() {
+		return selectedItems.isEmpty();
 	}
 
 	public void setCartID(Integer value) {
@@ -47,12 +43,9 @@ public class ShoppingCart {
 		return this.cartID;
 	}
 
-	public void setItemNumber(Integer value) {
-		this.itemNumber = value;
-	}
-
-	public Integer getItemNumber() {
-		return this.itemNumber;
+	@Transient
+	public int getItemCount() {
+		return this.selectedItems.size();
 	}
 
 	@OneToOne(optional = false)

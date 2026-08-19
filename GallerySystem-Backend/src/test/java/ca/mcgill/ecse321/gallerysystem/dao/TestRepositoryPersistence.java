@@ -203,9 +203,7 @@ public class TestRepositoryPersistence {
 
 		ShoppingCart cart = new ShoppingCart();
 		cart.setCustomer(customer);
-		cart.setIsEmpty(false);
-		cart.setItemNumber(Integer.valueOf(1));
-		cart.setSelectedItem(new HashSet<SelectedItem>());
+		cart.setSelectedItems(new HashSet<SelectedItem>());
 
 		cart = shoppingCartRepository.save(cart);
 
@@ -217,7 +215,7 @@ public class TestRepositoryPersistence {
 		item = selectedItemRepository.save(item);
 
 		// Keep both sides of the relationship synchronized
-		cart.getSelectedItem().add(item);
+		cart.getSelectedItems().add(item);
 		shoppingCartRepository.save(cart);
 
 		entityManager.flush();
@@ -275,7 +273,6 @@ public class TestRepositoryPersistence {
 
 		ShoppingCart cart = new ShoppingCart();
 		cart.setCustomer(customer);
-		cart.setIsEmpty(false);
 
 		/*
 		 * cartID is @GeneratedValue, so capture the returned entity.
@@ -292,8 +289,7 @@ public class TestRepositoryPersistence {
 		Set<SelectedItem> items = new HashSet<>();
 		items.add(item);
 
-		cart.setSelectedItem(items);
-		cart.setItemNumber(Integer.valueOf(items.size()));
+		cart.setSelectedItems(items);
 
 		entityManager.flush();
 		Integer cartID = cart.getCartID();
@@ -304,18 +300,18 @@ public class TestRepositoryPersistence {
 
 		assertNotNull(savedCart);
 		assertEquals(cartID, savedCart.getCartID());
-		assertEquals(false, savedCart.isIsEmpty());
-		assertEquals(Integer.valueOf(1), savedCart.getItemNumber());
+		assertEquals(false, savedCart.isEmpty());
+		assertEquals(Integer.valueOf(1), savedCart.getItemCount());
 
 		assertNotNull(savedCart.getCustomer());
 		assertEquals(
 				"customer@example.com",
 				savedCart.getCustomer().getEmail());
 
-		assertNotNull(savedCart.getSelectedItem());
-		assertEquals(1, savedCart.getSelectedItem().size());
+		assertNotNull(savedCart.getSelectedItems());
+		assertEquals(1, savedCart.getSelectedItems().size());
 
-		SelectedItem savedItem = savedCart.getSelectedItem().iterator().next();
+		SelectedItem savedItem = savedCart.getSelectedItems().iterator().next();
 
 		assertEquals(item.getItemID(), savedItem.getItemID());
 		assertEquals(Integer.valueOf(2), savedItem.getItemQuantity());
@@ -338,9 +334,7 @@ public class TestRepositoryPersistence {
 
 		ShoppingCart cart = new ShoppingCart();
 		cart.setCustomer(customer);
-		cart.setIsEmpty(true);
-		cart.setItemNumber(Integer.valueOf(0));
-		cart.setSelectedItem(new HashSet<SelectedItem>());
+		cart.setSelectedItems(new HashSet<SelectedItem>());
 
 		cart = shoppingCartRepository.save(cart);
 

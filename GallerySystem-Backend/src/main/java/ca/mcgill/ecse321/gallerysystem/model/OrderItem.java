@@ -43,7 +43,7 @@ public class OrderItem {
         this.order = order;
     }
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     public ArtPiece getArtPiece() {
         return this.artPiece;
     }

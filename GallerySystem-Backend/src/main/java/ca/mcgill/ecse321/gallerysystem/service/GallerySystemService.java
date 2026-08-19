@@ -1,20 +1,21 @@
 package ca.mcgill.ecse321.gallerysystem.service;
 
 import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 // Implementing use cases
-
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 
 import ca.mcgill.ecse321.gallerysystem.dao.*;
 import ca.mcgill.ecse321.gallerysystem.model.*;
@@ -36,8 +37,10 @@ public class GallerySystemService {
 	CustomerRepository customerRepository;
 	@Autowired
 	AdministratorRepository administratorRepository;
-	@Autowired 
+	@Autowired
 	ArtPieceRepository artPieceRepository;
+	@Autowired
+	OrderItemRepository orderItemRepository;
 
 	// Basic email format check: something@something.something
 	private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
@@ -66,67 +69,63 @@ public class GallerySystemService {
 		}
 		return trimmed;
 	}
-	
-	
-	
-	@Transactional 
+
+	@Transactional
 	public User getUser(String email) {
 		User user = userRepository.findUserByEmail(email);
 		return user;
 	}
-	
-	
-	@Transactional 
-	public ArtPiece createArtPiece(String artName, Integer quantity, float price, Integer discountPercentage, Float commissionPercentage, String description, String artistEmail) {
-		 artName = requireNonBlank(artName, "Art piece name");
-		 description = requireNonBlank(description, "Description");
-		 artistEmail = requireValidEmail(artistEmail, "Artist email");
-		 if (quantity == null || quantity <= 0) {
-			 throw new IllegalArgumentException("Quantity must be a positive number.");
-		 }
-		 if (price < 0) {
-			 throw new IllegalArgumentException("Price cannot be negative.");
-		 }
-		 if (discountPercentage == null || discountPercentage < 0) {
-			 throw new IllegalArgumentException("Discount percentage cannot be null or negative.");
-		 }
-		 if (commissionPercentage == null || commissionPercentage < 0) {
-			 throw new IllegalArgumentException("Commission percentage cannot be null or negative.");
-		 }
 
-		 Artist artist = artistRepository.findArtistByEmail(artistEmail);
-		 if (artist == null) {
-			 throw new IllegalArgumentException("No artist found with email: " + artistEmail);
-		 }
+	@Transactional
+	public ArtPiece createArtPiece(String artName, Integer quantity, float price, Integer discountPercentage,
+			Float commissionPercentage, String description, String artistEmail) {
+		artName = requireNonBlank(artName, "Art piece name");
+		description = requireNonBlank(description, "Description");
+		artistEmail = requireValidEmail(artistEmail, "Artist email");
+		if (quantity == null || quantity <= 0) {
+			throw new IllegalArgumentException("Quantity must be a positive number.");
+		}
+		if (price < 0) {
+			throw new IllegalArgumentException("Price cannot be negative.");
+		}
+		if (discountPercentage == null || discountPercentage < 0) {
+			throw new IllegalArgumentException("Discount percentage cannot be null or negative.");
+		}
+		if (commissionPercentage == null || commissionPercentage < 0) {
+			throw new IllegalArgumentException("Commission percentage cannot be null or negative.");
+		}
 
-		 ArtPiece artpiece = new ArtPiece();
-		 artpiece.setQuantity(quantity);
-		 artpiece.setPrice(price);
-		 artpiece.setDiscountPercentage(discountPercentage);
-		 artpiece.setCommissionPercentage(commissionPercentage);
-		 artpiece.setArtName(artName);
-		 artpiece.setDescription(description);
-		 artpiece.setArtist(artist);
-		 
+		Artist artist = artistRepository.findArtistByEmail(artistEmail);
+		if (artist == null) {
+			throw new IllegalArgumentException("No artist found with email: " + artistEmail);
+		}
+
+		ArtPiece artpiece = new ArtPiece();
+		artpiece.setQuantity(quantity);
+		artpiece.setPrice(price);
+		artpiece.setDiscountPercentage(discountPercentage);
+		artpiece.setCommissionPercentage(commissionPercentage);
+		artpiece.setArtName(artName);
+		artpiece.setDescription(description);
+		artpiece.setArtist(artist);
+
 		artPieceRepository.save(artpiece);
 		return artpiece;
 	}
-	
-	
+
 	@Transactional
 	public ArtPiece getArtpiece(Integer artID) {
 		ArtPiece artpiece = artPieceRepository.findArtPieceByArtID(artID);
 		return artpiece;
 	}
-	
-	@Transactional 
+
+	@Transactional
 	public List<ArtPiece> getAllArtPieces() {
 		return toList(artPieceRepository.findAll());
 	}
 
-	
 	@Transactional
-	public Customer createCustomer(String userName,  String email, String address, String password) {
+	public Customer createCustomer(String userName, String email, String address, String password) {
 		userName = requireNonBlank(userName, "Username");
 		email = requireValidEmail(email, "Email");
 		address = requireNonBlank(address, "Address");
@@ -134,90 +133,101 @@ public class GallerySystemService {
 		if (userRepository.findUserByEmail(email) != null) {
 			throw new IllegalArgumentException("A user with this email already exists: " + email);
 		}
-		Customer customer  = new Customer();
+		Customer customer = new Customer();
 		customer.setAddress(address);
 		customer.setEmail(email);
 		customer.setUserName(userName);
 		customer.setPassword(password);
-		
-		
+
 		customerRepository.save(customer);
-		return customer;	
+		return customer;
 	}
-	
-	@Transactional 
+
+	@Transactional
 	public Customer createCustomer(Customer customer) {
-		Customer updatedCustomer  = customer;
+		Customer updatedCustomer = customer;
 
 		customerRepository.save(updatedCustomer);
-		return updatedCustomer;	
-		
+		return updatedCustomer;
+
 	}
-	
 
 	@Transactional
 	public Customer getCustomer(String email) {
 		Customer customer = customerRepository.findCustomerByEmail(email);
-		return customer;	
+		return customer;
 	}
-	
-	
+
 	@Transactional
 	public List<Customer> getAllCustomers() {
 		return toList(customerRepository.findAll());
 	}
-	
-	@Transactional 
+
+	@Transactional
 	public void deleteCustomer(String email) {
-		customerRepository.deleteById(email);	
+		customerRepository.deleteById(email);
 	}
-	
+
 	@Transactional
 	public void deleteAllCustomers() {
 		customerRepository.deleteAll();
 	}
-	
+
 	@Transactional
-	public Artist createArtist(String userName,  String email, String password) {
+	public Artist createArtist(String userName, String email, String password) {
 		userName = requireNonBlank(userName, "Username");
 		email = requireValidEmail(email, "Email");
 		password = requireNonBlank(password, "Password");
 		if (userRepository.findUserByEmail(email) != null) {
 			throw new IllegalArgumentException("A user with this email already exists: " + email);
 		}
-		Artist artist  = new Artist();
+		Artist artist = new Artist();
 		artist.setEmail(email);
 		artist.setUserName(userName);
 		artist.setPassword(password);
-		
-		
+
 		artistRepository.save(artist);
-		return artist;	
+		return artist;
 	}
-	
+
 	@Transactional
 	public Artist getArtist(String email) {
 		Artist artist = artistRepository.findArtistByEmail(email);
-		return artist;	
+		return artist;
 	}
-	  
+
 	@Transactional
 	public List<Artist> getAllArtists() {
 		return toList(artistRepository.findAll());
 	}
 
-	
 	@Transactional
-	public void deleteArtist(String email) {
-		artistRepository.deleteById(email);
-		
+	public void deleteArtist(String artistEmail) {
+		Artist artist = artistRepository.findArtistByEmail(artistEmail);
+		if (artist == null) {
+			throw new IllegalArgumentException("Artist not found!");
+		}
+
+		Set<ArtPiece> pieces = artPieceRepository.findByArtist(artist);
+
+		for (ArtPiece art : pieces) {
+			// detach historical OrderItems before the ArtPiece row disappears
+			Set<OrderItem> items = orderItemRepository.findByArtPiece(art);
+			for (OrderItem oi : items) {
+				oi.setArtPiece(null);
+				orderItemRepository.save(oi);
+			}
+			artPieceRepository.delete(art);
+		}
+
+		artistRepository.delete(artist);
 	}
+
 	@Transactional
 	public void deleteAllArtists() {
 		artistRepository.deleteAll();
 	}
 
-	
 	@Transactional
 	public Administrator createAdministrator(String userName, String email, String password) {
 		userName = requireNonBlank(userName, "Username");
@@ -226,61 +236,65 @@ public class GallerySystemService {
 		if (userRepository.findUserByEmail(email) != null) {
 			throw new IllegalArgumentException("A user with this email already exists: " + email);
 		}
-		Administrator administrator  = new Administrator();
+		Administrator administrator = new Administrator();
 		administrator.setEmail(email);
 		administrator.setUserName(userName);
 		administrator.setPassword(password);
-		
-		
+
 		administratorRepository.save(administrator);
-		return administrator;	
+		return administrator;
 	}
-	
+
 	@Transactional
 	public List<Administrator> getAllAdministrators() {
 		return toList(administratorRepository.findAll());
 	}
-	
+
 	@Transactional
 	public Administrator getAdministrator(String adminEmail) {
 		Administrator admin = administratorRepository.findAdministratorByEmail(adminEmail);
 		return admin;
 	}
+
 	@Transactional
 	public void deleteAdministrator(String email) {
 		administratorRepository.deleteById(email);
-		
+
 	}
+
 	@Transactional
 	public void deleteAllAdministrators() {
 		administratorRepository.deleteAll();
 	}
-	
+
 	@Transactional
-	public List<User> getAllUsers(){
+	public List<User> getAllUsers() {
 		return toList(userRepository.findAll());
 	}
-	
+
 	@Transactional
 	public ShoppingCart createShoppingCart(String customerEmail) {
-		Integer itemNumber = 0;
-		boolean isEmpty = true;
-		Set<SelectedItem> selectedItems = new HashSet<SelectedItem>();
-		if(customerEmail == null) {
-			 throw new IllegalArgumentException("Invalid Inputs!");
+		if (customerEmail == null) {
+			throw new IllegalArgumentException("Invalid Inputs!");
 		}
+
+		Customer customer = customerRepository.findCustomerByEmail(customerEmail);
+		if (customer == null) {
+			throw new IllegalArgumentException("Customer not found!");
+		}
+
+		if (shoppingCartRepository.findShoppingCartByCustomerEmail(customerEmail) != null) {
+			throw new IllegalArgumentException("Customer already has a cart!");
+		}
+
 		ShoppingCart sc = new ShoppingCart();
-		//sc.setCartID(cartID);
-		sc.setCustomer(customerRepository.findCustomerByEmail(customerEmail));
-		sc.setItemNumber(itemNumber);
-		sc.setIsEmpty(isEmpty);
-		sc.setSelectedItem(selectedItems);
-		shoppingCartRepository.save(sc);
-		return sc;
+		sc.setCustomer(customer);
+		sc.setSelectedItems(new HashSet<>());
+		return shoppingCartRepository.save(sc);
 	}
-	
+
 	@Transactional
-	public ShoppingCart appendItemToShoppingCart(Integer scID, String email){
+	public ShoppingCart appendItemToShoppingCart(Integer scID, String email) {
 		if (scID == null) {
 			throw new IllegalArgumentException("Selected item ID cannot be null.");
 		}
@@ -296,7 +310,7 @@ public class GallerySystemService {
 			throw new IllegalArgumentException("No selected item found with ID: " + scID);
 		}
 
-		Set<SelectedItem> si = sc.getSelectedItem();
+		Set<SelectedItem> si = sc.getSelectedItems();
 		si.add(item);
 		shoppingCartRepository.save(sc);
 		return sc;
@@ -307,22 +321,23 @@ public class GallerySystemService {
 		ShoppingCart sc = shoppingCartRepository.findShoppingCartByCustomerEmail(email);
 		return sc;
 	}
-	
+
 	@Transactional
-	public List<ShoppingCart> getAllShoppingCart(){
+	public List<ShoppingCart> getAllShoppingCart() {
 		return toList(shoppingCartRepository.findAll());
 	}
-	
+
 	@Transactional
 	public void deleteShoppingCart(Integer cartID) {
 		shoppingCartRepository.deleteById(cartID);
-		
+
 	}
+
 	@Transactional
 	public void deleteAllShoppingCarts() {
 		shoppingCartRepository.deleteAll();
 	}
-	
+
 	@Transactional
 	public SelectedItem createSelectedItem(Integer artID, Integer quantity) {
 		if (artID == null) {
@@ -338,7 +353,8 @@ public class GallerySystemService {
 		}
 		if (quantity > artPiece.getQuantity()) {
 			throw new IllegalArgumentException(
-				"Requested quantity (" + quantity + ") exceeds available stock (" + artPiece.getQuantity() + ") for art piece ID: " + artID);
+					"Requested quantity (" + quantity + ") exceeds available stock (" + artPiece.getQuantity()
+							+ ") for art piece ID: " + artID);
 		}
 
 		SelectedItem si = new SelectedItem();
@@ -347,80 +363,183 @@ public class GallerySystemService {
 		selectedItemRepository.save(si);
 		return si;
 	}
-	
+
 	@Transactional
-	public List<SelectedItem> getAllSelectedItem(){
+	public List<SelectedItem> getAllSelectedItem() {
 		return toList(selectedItemRepository.findAll());
 	}
-	
+
 	@Transactional
 	public void deleteSelectedItem(Integer itemID) {
 		selectedItemRepository.deleteById(itemID);
-		
+
 	}
+
 	@Transactional
 	public void deleteAllSelectedItems() {
 		selectedItemRepository.deleteAll();
 	}
-	
+
 	@Transactional
-	public Order createOrder(Integer ordernumber, Date orderDate, ShoppingCart shoppingCart, Customer customer) {
-		if(ordernumber == null || orderDate == null || shoppingCart == null || customer == null) {
-			 throw new IllegalArgumentException("Invalid Input!");
+	public Order checkout(String customerEmail) {
+
+		Customer customer = customerRepository.findCustomerByEmail(customerEmail);
+		if (customer == null) {
+			throw new IllegalArgumentException("Customer not found!");
 		}
+
+		ShoppingCart cart = shoppingCartRepository.findShoppingCartByCustomerEmail(customerEmail);
+		if (cart == null) {
+			throw new IllegalArgumentException("Cart not found!");
+		}
+
+		if (cart.getSelectedItems().isEmpty()) {
+			throw new IllegalArgumentException("Cannot checkout an empty cart!");
+		}
+
+		// --- stock/availability validation (fail fast, before mutating anything) ---
+		for (SelectedItem si : cart.getSelectedItems()) {
+			ArtPiece art = si.getArtPiece();
+			if (!art.isActive()) {
+				throw new IllegalArgumentException(
+						"Art piece '" + art.getArtName() + "' is no longer available!");
+			}
+			if (art.getQuantity() < si.getItemQuantity()) {
+				throw new IllegalArgumentException(
+						"Insufficient stock for '" + art.getArtName() + "'!");
+			}
+		}
+
+		// --- build snapshot OrderItems + decrement stock ---
+		Set<OrderItem> orderItems = new HashSet<>();
+		for (SelectedItem si : cart.getSelectedItems()) {
+			ArtPiece art = si.getArtPiece();
+
+			OrderItem oi = new OrderItem();
+			oi.setArtPiece(art);
+			oi.setQuantity(si.getItemQuantity());
+			oi.setListPrice(art.getPrice());
+			oi.setDiscountPercentage(art.getDiscountPercentage());
+			oi.setUnitPrice(calculateUnitPrice(art.getPrice(), art.getDiscountPercentage()));
+			oi.setCommissionPercentage(art.getCommissionPercentage());
+			oi.setArtName(art.getArtName());
+			oi.setDescription(art.getDescription());
+			orderItems.add(oi);
+
+			art.setQuantity(art.getQuantity() - si.getItemQuantity());
+			artPieceRepository.save(art);
+		}
+
+		// --- allocate order number, retrying on rare collision ---
+		Order order = null;
+		int attempts = 0;
+		while (order == null && attempts < 5) {
+			try {
+				Integer orderNumber = generateOrderNumber();
+				order = createOrder(orderNumber, new Date(System.currentTimeMillis()), cart, customer, orderItems);
+			} catch (DataIntegrityViolationException e) {
+				attempts++; // another checkout grabbed this number first, retry
+			}
+		}
+		if (order == null) {
+			throw new IllegalStateException("Could not allocate order number, please retry.");
+		}
+
+		// --- empty the cart only after the order is safely created ---
+		cart.getSelectedItems().clear();
+		shoppingCartRepository.save(cart);
+
+		return order;
+	}
+
+	/**
+	 * Pure construction + persistence. Does not touch the cart.
+	 * Kept separate so it can be unit-tested/reused without a full checkout flow.
+	 */
+	@Transactional
+	public Order createOrder(
+			Integer orderNumber,
+			Date orderDate,
+			ShoppingCart shoppingCart,
+			Customer customer,
+			Set<OrderItem> orderItems) {
+
+		if (orderNumber == null || orderDate == null
+				|| shoppingCart == null || customer == null || orderItems == null) {
+			throw new IllegalArgumentException("Invalid Input!");
+		}
+
 		Order o = new Order();
-		o.setOrderNumber(ordernumber);
+		o.setOrderNumber(orderNumber);
 		o.setOrderDate(orderDate);
 		o.setShoppingCart(shoppingCart);
 		o.setCustomer(customer);
-		return o;
+		o.setOrderItems(orderItems);
+
+		for (OrderItem oi : orderItems) {
+			oi.setOrder(o); // maintain owning side
+		}
+
+		return orderRepository.save(o); // cascades OrderItems (CascadeType.ALL)
 	}
-	
-	
-	
+
+	public Integer generateOrderNumber() {
+		LocalDate today = LocalDate.now();
+		String key = today.format(DateTimeFormatter.BASIC_ISO_DATE);
+		int from = Integer.parseInt(key + "00");
+		int to = Integer.parseInt(key + "99") + 1;
+
+		int seq = orderRepository.countByOrderNumberBetween(from, to) + 1;
+		if (seq > 99) {
+			throw new IllegalStateException("Daily order limit reached!");
+		}
+		return Integer.parseInt(key + String.format("%02d", seq));
+	}
+
+	private float calculateUnitPrice(float listPrice, Integer discountPercentage) {
+		float discount = listPrice * (discountPercentage / 100f);
+		return listPrice - discount;
+	}
+
 	@Transactional
 	public Order getOrder(Integer ordernumber) {
 		Order o = orderRepository.findOrderByOrderNumber(ordernumber);
 		return o;
 	}
-	
+
 	@Transactional
-	public List<Order> getAllOrder(){
+	public List<Order> getAllOrder() {
 		return toList(orderRepository.findAll());
 	}
-	
+
 	@Transactional
 	public void deleteOrder(Integer orderNumber) {
 		orderRepository.deleteById(orderNumber);
-		
+
 	}
-	
+
 	@Transactional
 	public void deleteAllOrders() {
 		orderRepository.deleteAll();
 	}
-	
-	
-	@Transactional 
+
+	@Transactional
 	public void deleteArtpiece(Integer artID) {
 		artPieceRepository.deleteById(artID);
-		
+
 	}
+
 	@Transactional
 	public void deleteAllArtPieces() {
 		artPieceRepository.deleteAll();
 	}
-	
-	private <T> List<T> toList(Iterable<T> iterable){
+
+	private <T> List<T> toList(Iterable<T> iterable) {
 		List<T> resultList = new ArrayList<T>();
 		for (T t : iterable) {
 			resultList.add(t);
 		}
 		return resultList;
 	}
-
-	
-	
-	
 
 }
