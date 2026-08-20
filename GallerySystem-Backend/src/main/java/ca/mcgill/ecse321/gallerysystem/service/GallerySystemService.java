@@ -436,7 +436,7 @@ public class GallerySystemService {
 		while (order == null && attempts < 5) {
 			try {
 				Integer orderNumber = generateOrderNumber();
-				order = createOrder(orderNumber, new Date(System.currentTimeMillis()), cart, customer, orderItems);
+				order = createOrder(orderNumber, new Date(System.currentTimeMillis()), customer, orderItems);
 			} catch (DataIntegrityViolationException e) {
 				attempts++; // another checkout grabbed this number first, retry
 			}
@@ -460,27 +460,25 @@ public class GallerySystemService {
 	public Order createOrder(
 			Integer orderNumber,
 			Date orderDate,
-			ShoppingCart shoppingCart,
 			Customer customer,
 			Set<OrderItem> orderItems) {
 
 		if (orderNumber == null || orderDate == null
-				|| shoppingCart == null || customer == null || orderItems == null) {
+				|| customer == null || orderItems == null) {
 			throw new IllegalArgumentException("Invalid Input!");
 		}
 
 		Order o = new Order();
 		o.setOrderNumber(orderNumber);
 		o.setOrderDate(orderDate);
-		o.setShoppingCart(shoppingCart);
 		o.setCustomer(customer);
 		o.setOrderItems(orderItems);
 
 		for (OrderItem oi : orderItems) {
-			oi.setOrder(o); // maintain owning side
+			oi.setOrder(o);
 		}
 
-		return orderRepository.save(o); // cascades OrderItems (CascadeType.ALL)
+		return orderRepository.save(o);
 	}
 
 	public Integer generateOrderNumber() {

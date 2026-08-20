@@ -2,6 +2,7 @@ package ca.mcgill.ecse321.gallerysystem.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.sql.Date;
 import java.util.HashSet;
@@ -39,9 +40,6 @@ public class TestRepositoryPersistence {
 	private ShoppingCartRepository shoppingCartRepository;
 
 	@Autowired
-	private UserRepository userRepository;
-
-	@Autowired
 	private ArtistRepository artistRepository;
 
 	@Autowired
@@ -49,6 +47,9 @@ public class TestRepositoryPersistence {
 
 	@Autowired
 	private AdministratorRepository administratorRepository;
+
+	@Autowired
+	private OrderItemRepository orderItemRepository;
 
 	@Test
 	public void testPersistAndLoadCustomer() {
@@ -348,7 +349,6 @@ public class TestRepositoryPersistence {
 		order.setOrderNumber(Integer.valueOf(1001));
 		order.setOrderDate(Date.valueOf("2020-11-28"));
 		order.setCustomer(customer);
-		order.setShoppingCart(cart);
 
 		order = orderRepository.save(order);
 
@@ -368,9 +368,182 @@ public class TestRepositoryPersistence {
 				"customer@example.com",
 				savedOrder.getCustomer().getEmail());
 
-		assertNotNull(savedOrder.getShoppingCart());
-		assertEquals(
-				cart.getCartID(),
-				savedOrder.getShoppingCart().getCartID());
 	}
+
+	@Test
+	public void testPersistAndLoadOrderItemViaOrderCascade() {
+
+		Artist artist = new Artist();
+		artist.setEmail("artist@example.com");
+		artist.setPassword("password");
+		artist.setUserName("artist");
+		artist = artistRepository.save(artist);
+
+		ArtPiece art = new ArtPiece();
+		art.setArtName("Starry Night");
+		art.setDescription("A test piece of artwork");
+		art.setDiscountPercentage(Integer.valueOf(10));
+		art.setPrice(100.0f);
+		art.setQuantity(Integer.valueOf(5));
+		art.setCommissionPercentage(20.0f);
+		art.setArtist(artist);
+		art = artPieceRepository.save(art);
+
+		Customer customer = new Customer();
+		customer.setEmail("customer@example.com");
+		customer.setPassword("password");
+		customer.setUserName("customer");
+		customer.setAddress("123 Main Street");
+		customer = customerRepository.save(customer);
+
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart.setSelectedItems(new HashSet<SelectedItem>());
+		cart = shoppingCartRepository.save(cart);
+
+		Order order = new Order();
+		order.setOrderNumber(Integer.valueOf(2026081901));
+		order.setOrderDate(Date.valueOf("2026-08-19"));
+		order.setCustomer(customer);
+
+		OrderItem oi = new OrderItem();
+		oi.setArtPiece(art);
+		oi.setQuantity(Integer.valueOf(2));
+		oi.setListPrice(100.0f);
+		oi.setDiscountPercentage(Integer.valueOf(10));
+		oi.setUnitPrice(90.0f);
+		oi.setCommissionPercentage(20.0f);
+		oi.setArtName("Starry Night");
+		oi.setDescription("A test piece of artwork");
+		oi.setOrder(order);
+
+		Set<OrderItem> orderItems = new HashSet<>();
+		orderItems.add(oi);
+		order.setOrderItems(orderItems);
+
+		/*
+		 * Only Order is saved here, not OrderItem directly. This is
+		 * intentional: Order.orderItems is annotated with
+		 * cascade = CascadeType.ALL, so saving the Order alone must be
+		 * enough to persist the OrderItem too. If cascade is misconfigured,
+		 * this test fails with a transient/unsaved-entity error rather than
+		 * silently passing.
+		 */
+		order = orderRepository.save(order);
+
+		entityManager.flush();
+
+		/*
+		 * Order.orderNumber is manually assigned, so save() uses merge(), not
+		 * persist(). merge() returns a new managed copy of the graph rather
+		 * than mutating the objects passed in — so the original `oi` reference
+		 * never receives its generated ID. Pull the managed OrderItem out of
+		 * the *returned* order instead.
+		 */
+
+		OrderItem savedOi = order.getOrderItems().iterator().next();
+		Integer orderItemID = savedOi.getOrderItemID();
+
+		entityManager.clear();
+
+		assertNotNull(orderItemID);
+
+		OrderItem savedItem = orderItemRepository.findOrderItemByOrderItemID(orderItemID);
+
+		assertNotNull(savedItem);
+		assertEquals(Integer.valueOf(2), savedItem.getQuantity());
+		assertEquals(100.0f, savedItem.getListPrice());
+		assertEquals(90.0f, savedItem.getUnitPrice());
+		assertEquals(Integer.valueOf(10), savedItem.getDiscountPercentage());
+		assertEquals(20.0f, savedItem.getCommissionPercentage());
+		assertEquals("Starry Night", savedItem.getArtName());
+		assertEquals("A test piece of artwork", savedItem.getDescription());
+
+		assertNotNull(savedItem.getOrder());
+		assertEquals(order.getOrderNumber(), savedItem.getOrder().getOrderNumber());
+
+		assertNotNull(savedItem.getArtPiece());
+		assertEquals(art.getArtID(), savedItem.getArtPiece().getArtID());
+	}
+
+	@Test
+	public void testOrderItemArtPieceCanBeNulled() {
+
+		Artist artist = new Artist();
+		artist.setEmail("artist@example.com");
+		artist.setPassword("password");
+		artist.setUserName("artist");
+		artist = artistRepository.save(artist);
+
+		ArtPiece art = new ArtPiece();
+		art.setArtName("Temporary Piece");
+		art.setDescription("Will be dereferenced");
+		art.setDiscountPercentage(Integer.valueOf(0));
+		art.setPrice(50.0f);
+		art.setQuantity(Integer.valueOf(3));
+		art.setCommissionPercentage(15.0f);
+		art.setArtist(artist);
+		art = artPieceRepository.save(art);
+
+		Customer customer = new Customer();
+		customer.setEmail("customer2@example.com");
+		customer.setPassword("password");
+		customer.setUserName("customer2");
+		customer.setAddress("456 Second Street");
+		customer = customerRepository.save(customer);
+
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart.setSelectedItems(new HashSet<SelectedItem>());
+		cart = shoppingCartRepository.save(cart);
+
+		Order order = new Order();
+		order.setOrderNumber(Integer.valueOf(2026081902));
+		order.setOrderDate(Date.valueOf("2026-08-19"));
+		order.setCustomer(customer);
+
+		OrderItem oi = new OrderItem();
+		oi.setArtPiece(art);
+		oi.setQuantity(Integer.valueOf(1));
+		oi.setListPrice(50.0f);
+		oi.setDiscountPercentage(Integer.valueOf(0));
+		oi.setUnitPrice(50.0f);
+		oi.setCommissionPercentage(15.0f);
+		oi.setArtName("Temporary Piece");
+		oi.setDescription("Will be dereferenced");
+		oi.setOrder(order);
+
+		Set<OrderItem> orderItems = new HashSet<>();
+		orderItems.add(oi);
+		order.setOrderItems(orderItems);
+		order = orderRepository.save(order);
+
+		entityManager.flush();
+
+		OrderItem savedOi = order.getOrderItems().iterator().next();
+		Integer orderItemID = savedOi.getOrderItemID();
+
+		entityManager.clear();
+
+		/*
+		 * Simulates what deleteArtist() must do before removing the
+		 * ArtPiece row: detach the OrderItem's live reference while
+		 * leaving the historical snapshot fields untouched.
+		 */
+		OrderItem toUpdate = orderItemRepository.findOrderItemByOrderItemID(orderItemID);
+		toUpdate.setArtPiece(null);
+		orderItemRepository.save(toUpdate);
+
+		entityManager.flush();
+		entityManager.clear();
+
+		OrderItem reloaded = orderItemRepository.findOrderItemByOrderItemID(orderItemID);
+
+		assertNotNull(reloaded);
+		assertNull(reloaded.getArtPiece());
+		assertEquals("Temporary Piece", reloaded.getArtName());
+		assertEquals(50.0f, reloaded.getListPrice());
+		assertEquals(50.0f, reloaded.getUnitPrice());
+	}
+
 }

@@ -18,7 +18,6 @@ public class Order {
 
 	private Integer orderNumber;
 	private Date orderDate;
-	private ShoppingCart shoppingCart;
 	private Customer customer;
 	private Set<OrderItem> orderItems = new HashSet<>();
 
@@ -37,15 +36,6 @@ public class Order {
 
 	public Date getOrderDate() {
 		return this.orderDate;
-	}
-
-	@ManyToOne(optional = false)
-	public ShoppingCart getShoppingCart() {
-		return this.shoppingCart;
-	}
-
-	public void setShoppingCart(ShoppingCart shoppingCart) {
-		this.shoppingCart = shoppingCart;
 	}
 
 	@ManyToOne(optional = false)

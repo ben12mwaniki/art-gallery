@@ -1,6 +1,7 @@
 package ca.mcgill.ecse321.gallerysystem.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.sql.Date;
 import java.util.HashSet;
@@ -48,29 +49,25 @@ public class TestDeleteFromRepository {
 	@Autowired
 	private AdministratorRepository administratorRepository;
 
+	@Autowired
+	private OrderItemRepository orderItemRepository;
+
 	@AfterEach
 	public void clearDatabase() {
 		/*
-		 * Deletion order matters because of foreign-key relationships.
-		 *
 		 * Dependency chain:
 		 *
-		 * Order -> ShoppingCart, Customer
-		 * ShoppingCart -> Customer, SelectedItem
-		 * SelectedItem -> ArtPiece
+		 * OrderItem -> Order, ArtPiece
+		 * Order -> Customer
+		 * SelectedItem -> ShoppingCart, ArtPiece
+		 * ShoppingCart -> Customer
 		 * ArtPiece -> Artist
 		 * Artist/Customer/Administrator -> User
-		 *
-		 * Deleting in dependency order prevents foreign-key constraint
-		 * violations and ensures that data from one test does not leak
-		 * into another.
-		 *
-		 * NOTE: ShoppingCart has orphanRemoval=true for SelectedItem,
-		 * so carts are deleted before SelectedItems.
 		 */
+		orderItemRepository.deleteAll();
 		orderRepository.deleteAll();
-		shoppingCartRepository.deleteAll();
 		selectedItemRepository.deleteAll();
+		shoppingCartRepository.deleteAll();
 		artPieceRepository.deleteAll();
 		customerRepository.deleteAll();
 		artistRepository.deleteAll();
@@ -266,7 +263,6 @@ public class TestDeleteFromRepository {
 		order.setOrderNumber(10);
 		order.setOrderDate(date);
 		order.setCustomer(customer);
-		order.setShoppingCart(cart);
 
 		/*
 		 * Because orderNumber is a manually assigned ID, Spring Data JPA
@@ -280,5 +276,167 @@ public class TestDeleteFromRepository {
 		orderRepository.delete(order);
 
 		assertEquals(0, orderRepository.count());
+	}
+
+	@Test
+	@Transactional
+	public void testDeleteOrderCascadesOrderItemsButNotArtPiece() {
+
+		Customer customer = new Customer();
+		customer.setEmail("customer@example.com");
+		customer.setPassword("password");
+		customer.setUserName("name");
+		customer = customerRepository.save(customer);
+
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart = shoppingCartRepository.save(cart);
+
+		Artist artist = new Artist();
+		artist.setEmail("artist@example.com");
+		artist.setPassword("password");
+		artist.setUserName("name");
+		artist = artistRepository.save(artist);
+
+		ArtPiece art = new ArtPiece();
+		art.setArtName("artName");
+		art.setDescription("Test art piece");
+		art.setDiscountPercentage(0);
+		art.setPrice(10.0f);
+		art.setQuantity(5);
+		art.setCommissionPercentage(10.0f);
+		art.setArtist(artist);
+		art = artPieceRepository.save(art);
+
+		Integer artID = art.getArtID();
+
+		Order order = new Order();
+		order.setOrderNumber(10);
+		order.setOrderDate(Date.valueOf("2026-08-19"));
+		order.setCustomer(customer);
+
+		OrderItem oi = new OrderItem();
+		oi.setArtPiece(art);
+		oi.setQuantity(1);
+		oi.setListPrice(10.0f);
+		oi.setUnitPrice(10.0f);
+		oi.setDiscountPercentage(0);
+		oi.setCommissionPercentage(10.0f);
+		oi.setArtName("artName");
+		oi.setDescription("Test art piece");
+		oi.setOrder(order);
+
+		Set<OrderItem> orderItems = new HashSet<>();
+		orderItems.add(oi);
+		order.setOrderItems(orderItems);
+
+		order = orderRepository.save(order);
+		entityManager.flush();
+
+		assertEquals(1, orderItemRepository.count());
+		assertEquals(1, artPieceRepository.count());
+
+		/*
+		 * cascade = CascadeType.ALL on Order.orderItems must include
+		 * REMOVE: deleting the Order should delete its OrderItems too,
+		 * without needing to delete them explicitly first.
+		 */
+		orderRepository.delete(order);
+		entityManager.flush();
+		entityManager.clear();
+
+		assertEquals(0, orderRepository.count());
+		assertEquals(0, orderItemRepository.count());
+
+		/*
+		 * Deleting order history must never touch the live ArtPiece or its
+		 * stock. OrderItem.artPiece is a reference TO ArtPiece, not the
+		 * other way around, so cascading from Order/OrderItem must stop
+		 * there. This guards against someone later mis-cascading or adding
+		 * a cleanup hook that reaches into ArtPiece.
+		 */
+		assertEquals(1, artPieceRepository.count());
+		ArtPiece survivingArt = artPieceRepository.findArtPieceByArtID(artID);
+		assertNotNull(survivingArt);
+		assertEquals(Integer.valueOf(5), survivingArt.getQuantity());
+		assertEquals("artName", survivingArt.getArtName());
+	}
+
+	@Test
+	@Transactional
+	public void testOrphanRemovalOnOrderItemDoesNotAffectArtPiece() {
+
+		Customer customer = new Customer();
+		customer.setEmail("customer@example.com");
+		customer.setPassword("password");
+		customer.setUserName("name");
+		customer = customerRepository.save(customer);
+
+		ShoppingCart cart = new ShoppingCart();
+		cart.setCustomer(customer);
+		cart = shoppingCartRepository.save(cart);
+
+		Artist artist = new Artist();
+		artist.setEmail("artist@example.com");
+		artist.setPassword("password");
+		artist.setUserName("name");
+		artist = artistRepository.save(artist);
+
+		ArtPiece art = new ArtPiece();
+		art.setArtName("artName");
+		art.setDescription("Test art piece");
+		art.setDiscountPercentage(0);
+		art.setPrice(10.0f);
+		art.setQuantity(5);
+		art.setCommissionPercentage(10.0f);
+		art.setArtist(artist);
+		art = artPieceRepository.save(art);
+
+		Integer artID = art.getArtID();
+
+		Order order = new Order();
+		order.setOrderNumber(11);
+		order.setOrderDate(Date.valueOf("2026-08-19"));
+		order.setCustomer(customer);
+
+		OrderItem oi = new OrderItem();
+		oi.setArtPiece(art);
+		oi.setQuantity(1);
+		oi.setListPrice(10.0f);
+		oi.setUnitPrice(10.0f);
+		oi.setDiscountPercentage(0);
+		oi.setCommissionPercentage(10.0f);
+		oi.setArtName("artName");
+		oi.setDescription("Test art piece");
+		oi.setOrder(order);
+
+		Set<OrderItem> orderItems = new HashSet<>();
+		orderItems.add(oi);
+		order.setOrderItems(orderItems);
+
+		order = orderRepository.save(order);
+		entityManager.flush();
+
+		assertEquals(1, orderItemRepository.count());
+
+		/*
+		 * orphanRemoval = true: removing the OrderItem from the owning
+		 * Order's set (without deleting the Order itself) must delete
+		 * the now-orphaned OrderItem row on the next flush.
+		 */
+		order.getOrderItems().clear();
+		orderRepository.save(order);
+		entityManager.flush();
+		entityManager.clear();
+
+		assertEquals(0, orderItemRepository.count());
+		assertEquals(1, orderRepository.count());
+
+		// Same guard as above: orphan removal on OrderItem must not cascade
+		// into ArtPiece or touch its stock.
+		assertEquals(1, artPieceRepository.count());
+		ArtPiece survivingArt = artPieceRepository.findArtPieceByArtID(artID);
+		assertNotNull(survivingArt);
+		assertEquals(Integer.valueOf(5), survivingArt.getQuantity());
 	}
 }

@@ -320,7 +320,7 @@ public class GallerySystemRestController {
 		if (o == null) {
 			throw new IllegalArgumentException("There is no such Order!");
 		}
-		OrderDto oDto = new OrderDto(o.getOrderNumber(), o.getOrderDate(), o.getShoppingCart(), o.getCustomer());
+		OrderDto oDto = new OrderDto(o.getOrderNumber(), o.getOrderDate(), o.getCustomer());
 
 		return oDto;
 	}
