@@ -1,5 +1,6 @@
 package ca.mcgill.ecse321.gallerysystem.model;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -19,7 +20,7 @@ public class ShoppingCart {
 
 	private Set<SelectedItem> selectedItems = new HashSet<>();
 
-	@OneToMany(mappedBy = "shoppingCart", fetch = FetchType.EAGER, orphanRemoval = true)
+	@OneToMany(mappedBy = "shoppingCart", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
 	public Set<SelectedItem> getSelectedItems() {
 		return this.selectedItems;
 	}

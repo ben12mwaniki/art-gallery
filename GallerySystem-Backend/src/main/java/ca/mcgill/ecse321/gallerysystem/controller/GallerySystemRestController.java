@@ -333,11 +333,15 @@ public class GallerySystemRestController {
 	}
 
 	@PostMapping(value = { "/SelectedItem/{artID}", "/SelectedItem/{artID}/" })
-	public SelectedItemDto createSelectedItem(@PathVariable("artID") Integer artID, @RequestParam Integer quantity)
+	public SelectedItemDto createSelectedItem(
+			@PathVariable("artID") Integer artID,
+			@RequestParam Integer quantity,
+			@RequestParam String customerEmail)
 			throws IllegalArgumentException {
-		SelectedItem si = service.createSelectedItem(artID, quantity);
-		return convertToDto(si);
 
+		SelectedItem si = service.createSelectedItem(artID, quantity, customerEmail);
+
+		return convertToDto(si);
 	}
 
 	@DeleteMapping(value = { "/SelectedItem/{itemID}", "/SelectedItem/{itemID}/" })

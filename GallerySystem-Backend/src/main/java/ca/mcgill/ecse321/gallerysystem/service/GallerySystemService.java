@@ -339,45 +339,77 @@ public class GallerySystemService {
 	}
 
 	@Transactional
-	public SelectedItem createSelectedItem(Integer artID, Integer quantity) {
+	public SelectedItem createSelectedItem(
+			Integer artID,
+			Integer quantity,
+			String customerEmail) {
+
 		if (artID == null) {
-			throw new IllegalArgumentException("Art piece ID cannot be null.");
+			throw new IllegalArgumentException(
+					"Art piece ID cannot be null.");
 		}
+
 		if (quantity == null || quantity <= 0) {
-			throw new IllegalArgumentException("Quantity must be a positive number.");
+			throw new IllegalArgumentException(
+					"Quantity must be a positive number.");
+		}
+
+		if (customerEmail == null || customerEmail.trim().isEmpty()) {
+			throw new IllegalArgumentException(
+					"Customer email cannot be null or blank.");
 		}
 
 		ArtPiece artPiece = artPieceRepository.findArtPieceByArtID(artID);
+
 		if (artPiece == null) {
-			throw new IllegalArgumentException("No art piece found with ID: " + artID);
+			throw new IllegalArgumentException(
+					"No art piece found with ID: " + artID);
 		}
+
 		if (quantity > artPiece.getQuantity()) {
 			throw new IllegalArgumentException(
-					"Requested quantity (" + quantity + ") exceeds available stock (" + artPiece.getQuantity()
+					"Requested quantity (" + quantity
+							+ ") exceeds available stock (" + artPiece.getQuantity()
 							+ ") for art piece ID: " + artID);
 		}
 
-		SelectedItem si = new SelectedItem();
-		si.setArtPiece(artPiece);
-		si.setItemQuantity(quantity);
-		selectedItemRepository.save(si);
-		return si;
+		ShoppingCart shoppingCart = shoppingCartRepository
+				.findShoppingCartByCustomerEmail(customerEmail.trim());
+
+		if (shoppingCart == null) {
+			throw new IllegalArgumentException(
+					"No shopping cart found for customer: "
+							+ customerEmail);
+		}
+
+		SelectedItem selectedItem = new SelectedItem();
+		selectedItem.setArtPiece(artPiece);
+		selectedItem.setItemQuantity(quantity);
+		selectedItem.setShoppingCart(shoppingCart);
+
+		shoppingCart.getSelectedItems().add(selectedItem);
+
+		shoppingCartRepository.save(shoppingCart);
+
+		return selectedItem;
 	}
 
+	// Note: not to be exposed via REST API, only used internally for testing.
 	@Transactional
 	public List<SelectedItem> getAllSelectedItem() {
 		return toList(selectedItemRepository.findAll());
+	}
+
+	// Note: not to be exposed via REST API, only used internally for testing.
+	@Transactional
+	public void deleteAllSelectedItems() {
+		selectedItemRepository.deleteAll();
 	}
 
 	@Transactional
 	public void deleteSelectedItem(Integer itemID) {
 		selectedItemRepository.deleteById(itemID);
 
-	}
-
-	@Transactional
-	public void deleteAllSelectedItems() {
-		selectedItemRepository.deleteAll();
 	}
 
 	@Transactional
@@ -390,7 +422,7 @@ public class GallerySystemService {
 
 		ShoppingCart cart = shoppingCartRepository.findShoppingCartByCustomerEmail(customerEmail);
 		if (cart == null) {
-			throw new IllegalArgumentException("Cart not found!");
+			throw new IllegalArgumentException("No cart found for this customer!");
 		}
 
 		if (cart.getSelectedItems().isEmpty()) {
