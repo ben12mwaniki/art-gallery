@@ -24,8 +24,8 @@ dependencies {
     }
 
     // Optional: keep if you want explicit Mockito version control
-    testImplementation 'org.mockito:mockito-core:2.+'
-    testImplementation 'org.mockito:mockito-junit-jupiter:2.18.3'
+    testImplementation 'org.mockito:mockito-inline:2.28.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:2.28.2'
 }
 
 bootRun {
