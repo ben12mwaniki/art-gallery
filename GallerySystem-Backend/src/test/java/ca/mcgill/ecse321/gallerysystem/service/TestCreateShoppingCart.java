@@ -102,32 +102,4 @@ public class TestCreateShoppingCart {
 		assertEquals("Invalid Inputs!", error);
 	}
 
-	/**
-	 * Regression test: appending an item to a brand new shopping cart used
-	 * to throw a NullPointerException, because createShoppingCart initialized
-	 * selectedItem to null instead of an empty Set. This test creates a cart,
-	 * then immediately appends an item to it, and asserts no exception is
-	 * thrown and the item is actually present afterward.
-	 */
-	@Test
-	public void testAppendItemToFreshShoppingCart() {
-		String customerEmail = "alice@email.com";
-		Customer customer = new Customer();
-		customer.setEmail(customerEmail);
-
-		ShoppingCart sc = new ShoppingCart();
-		sc.setCustomer(customer);
-		sc.setSelectedItems(new HashSet<SelectedItem>());
-
-		SelectedItem item = new SelectedItem();
-
-		lenient().when(shoppingCartDao.findShoppingCartByCustomerEmail(customerEmail)).thenReturn(sc);
-		lenient().when(selectedItemDao.findSelectedItemByItemID(any(Integer.class))).thenReturn(item);
-
-		assertDoesNotThrow(() -> {
-			service.appendItemToShoppingCart(1, customerEmail);
-		});
-
-		assertEquals(1, sc.getSelectedItems().size());
-	}
 }

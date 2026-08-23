@@ -294,29 +294,6 @@ public class GallerySystemService {
 	}
 
 	@Transactional
-	public ShoppingCart appendItemToShoppingCart(Integer scID, String email) {
-		if (scID == null) {
-			throw new IllegalArgumentException("Selected item ID cannot be null.");
-		}
-		email = requireValidEmail(email, "Customer email");
-
-		ShoppingCart sc = shoppingCartRepository.findShoppingCartByCustomerEmail(email);
-		if (sc == null) {
-			throw new IllegalArgumentException("No shopping cart found for customer with email: " + email);
-		}
-
-		SelectedItem item = selectedItemRepository.findSelectedItemByItemID(scID);
-		if (item == null) {
-			throw new IllegalArgumentException("No selected item found with ID: " + scID);
-		}
-
-		Set<SelectedItem> si = sc.getSelectedItems();
-		si.add(item);
-		shoppingCartRepository.save(sc);
-		return sc;
-	}
-
-	@Transactional
 	public ShoppingCart getShoppingCart(String email) {
 		ShoppingCart sc = shoppingCartRepository.findShoppingCartByCustomerEmail(email);
 		return sc;

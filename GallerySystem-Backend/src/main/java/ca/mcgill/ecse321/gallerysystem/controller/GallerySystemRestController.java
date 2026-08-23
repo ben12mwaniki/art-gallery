@@ -264,11 +264,14 @@ public class GallerySystemRestController {
 		return convertToDto(service.getShoppingCart(customerEmail));
 	}
 
-	@PutMapping(value = { "/shoppingCart/{email}", "/shoppingCart/{email}" })
-	public ShoppingCartDto updateShoppingCart(@RequestParam("email") String customerEmail, @PathVariable Integer scID) {
-		ShoppingCart sc = service.appendItemToShoppingCart(scID, customerEmail);
-		return convertToDto(sc);
-	}
+	// Endpoint unnecessary as is, need to find a way to update the shopping cart
+	// with selected items, but this is not the right way to do it
+	// @PutMapping(value = { "/shoppingCart/{email}", "/shoppingCart/{email}" })
+	// public ShoppingCartDto updateShoppingCart(@RequestParam("email") String
+	// customerEmail, @PathVariable Integer scID) {
+	// ShoppingCart sc = service.appendItemToShoppingCart(scID, customerEmail);
+	// return convertToDto(sc);
+	// }
 
 	@DeleteMapping(value = { "/shoppingCart/{cartID}", "/shoppingCart/{cartID}/" })
 	public ResponseEntity<String> deleteShoppingCart(@PathVariable("email") Integer cartID) {
