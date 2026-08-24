@@ -132,12 +132,17 @@ public class GallerySystemRestController {
 			throws ResourceNotFoundException {
 
 		Customer customer = service.getCustomer(email);
+
+		if (customer == null) {
+			throw new ResourceNotFoundException(
+					"No customer found with email: " + email);
+		}
+
 		customer.setAddress(customerDetails.getAddress());
-		customer.setEmail(customerDetails.getEmail());
 		customer.setPassword(customerDetails.getPassword());
 		customer.setUserName(customerDetails.getUserName());
 
-		final Customer updatedCustomer = service.createCustomer(customer);
+		Customer updatedCustomer = service.updateCustomer(customer);
 		return convertToDto(updatedCustomer);
 	}
 

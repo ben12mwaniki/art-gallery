@@ -1,11 +1,8 @@
 package ca.mcgill.ecse321.gallerysystem.service;
 
 import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
-// Implementing use cases
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,40 +38,6 @@ public class GallerySystemService {
 	ArtPieceRepository artPieceRepository;
 	@Autowired
 	OrderItemRepository orderItemRepository;
-
-	// Basic email format check: something@something.something
-	private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
-
-	/**
-	 * Trims a String field and throws a specific, descriptive error if it is
-	 * null or blank. Returns the trimmed value so callers can store the
-	 * cleaned-up version instead of the raw input (fixes stray whitespace,
-	 * e.g. tab/newline characters, from being silently persisted).
-	 */
-	private String requireNonBlank(String value, String fieldName) {
-		if (value == null || value.trim().isEmpty()) {
-			throw new IllegalArgumentException(fieldName + " cannot be empty.");
-		}
-		return value.trim();
-	}
-
-	/**
-	 * Trims and validates an email field: not blank, and matches a basic
-	 * email pattern. Returns the trimmed value.
-	 */
-	private String requireValidEmail(String email, String fieldName) {
-		String trimmed = requireNonBlank(email, fieldName);
-		if (!trimmed.matches(EMAIL_REGEX)) {
-			throw new IllegalArgumentException(fieldName + " is not a validly formatted email address: " + trimmed);
-		}
-		return trimmed;
-	}
-
-	@Transactional
-	public User getUser(String email) {
-		User user = userRepository.findUserByEmail(email);
-		return user;
-	}
 
 	@Transactional
 	public ArtPiece createArtPiece(String artName, Integer quantity, float price, Integer discountPercentage,
@@ -144,12 +107,27 @@ public class GallerySystemService {
 	}
 
 	@Transactional
-	public Customer createCustomer(Customer customer) {
-		Customer updatedCustomer = customer;
+	public Customer updateCustomer(Customer customer) {
+		if (customer == null) {
+			throw new IllegalArgumentException("Customer cannot be null.");
+		}
 
-		customerRepository.save(updatedCustomer);
-		return updatedCustomer;
+		String email = requireValidEmail(customer.getEmail(), "Email");
 
+		Customer existingCustomer = customerRepository.findCustomerByEmail(email);
+		if (existingCustomer == null) {
+			throw new IllegalArgumentException(
+					"No customer found with email: " + email);
+		}
+
+		existingCustomer.setUserName(
+				requireNonBlank(customer.getUserName(), "Username"));
+		existingCustomer.setAddress(
+				requireNonBlank(customer.getAddress(), "Address"));
+		existingCustomer.setPassword(
+				requireNonBlank(customer.getPassword(), "Password"));
+
+		return customerRepository.save(existingCustomer);
 	}
 
 	@Transactional
@@ -165,6 +143,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteCustomer(String email) {
+		email = requireNonBlank(email, "Customer email");
 		customerRepository.deleteById(email);
 	}
 
@@ -203,6 +182,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteArtist(String artistEmail) {
+		artistEmail = requireNonBlank(artistEmail, "Artist email");
 		Artist artist = artistRepository.findArtistByEmail(artistEmail);
 
 		if (artist == null) {
@@ -259,6 +239,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteAdministrator(String email) {
+		email = requireNonBlank(email, "Administrator email");
 		administratorRepository.deleteById(email);
 
 	}
@@ -269,16 +250,20 @@ public class GallerySystemService {
 	}
 
 	@Transactional
+	public User getUser(String email) {
+		User user = userRepository.findUserByEmail(email);
+		return user;
+	}
+
+	@Transactional
 	public List<User> getAllUsers() {
 		return toList(userRepository.findAll());
 	}
 
 	@Transactional
 	public ShoppingCart createShoppingCart(String customerEmail) {
-		if (customerEmail == null) {
-			throw new IllegalArgumentException("Invalid Inputs!");
-		}
 
+		customerEmail = requireNonBlank(customerEmail, "Customer email");
 		Customer customer = customerRepository.findCustomerByEmail(customerEmail);
 		if (customer == null) {
 			throw new IllegalArgumentException("Customer not found!");
@@ -370,6 +355,34 @@ public class GallerySystemService {
 		shoppingCartRepository.save(shoppingCart);
 
 		return selectedItem;
+	}
+
+	// Basic email format check: something@something.something
+	private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+
+	/**
+	 * Trims a String field and throws a specific, descriptive error if it is
+	 * null or blank. Returns the trimmed value so callers can store the
+	 * cleaned-up version instead of the raw input (fixes stray whitespace,
+	 * e.g. tab/newline characters, from being silently persisted).
+	 */
+	private String requireNonBlank(String value, String fieldName) {
+		if (value == null || value.trim().isEmpty()) {
+			throw new IllegalArgumentException(fieldName + " cannot be empty.");
+		}
+		return value.trim();
+	}
+
+	/**
+	 * Trims and validates an email field: not blank, and matches a basic
+	 * email pattern. Returns the trimmed value.
+	 */
+	private String requireValidEmail(String email, String fieldName) {
+		String trimmed = requireNonBlank(email, fieldName);
+		if (!trimmed.matches(EMAIL_REGEX)) {
+			throw new IllegalArgumentException(fieldName + " is not a validly formatted email address: " + trimmed);
+		}
+		return trimmed;
 	}
 
 	// Note: not to be exposed via REST API, only used internally for testing.
