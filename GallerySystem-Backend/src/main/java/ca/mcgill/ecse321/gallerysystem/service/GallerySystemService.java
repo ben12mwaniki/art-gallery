@@ -82,6 +82,7 @@ public class GallerySystemService {
 		return artpiece;
 	}
 
+	// Note: not to be exposed via REST API, only used internally for testing.
 	@Transactional
 	public List<ArtPiece> getAllArtPieces() {
 		return toList(artPieceRepository.findAll());
@@ -132,6 +133,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public Customer getCustomer(String email) {
+		email = requireValidEmail(email, "Email");
 		Customer customer = customerRepository.findCustomerByEmail(email);
 		return customer;
 	}
@@ -143,10 +145,11 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteCustomer(String email) {
-		email = requireNonBlank(email, "Customer email");
+		email = requireValidEmail(email, "Customer email");
 		customerRepository.deleteById(email);
 	}
 
+	// Note: not to be exposed via REST API, only used internally for testing.
 	@Transactional
 	public void deleteAllCustomers() {
 		customerRepository.deleteAll();
@@ -171,6 +174,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public Artist getArtist(String email) {
+		email = requireValidEmail(email, "Email");
 		Artist artist = artistRepository.findArtistByEmail(email);
 		return artist;
 	}
@@ -182,7 +186,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteArtist(String artistEmail) {
-		artistEmail = requireNonBlank(artistEmail, "Artist email");
+		artistEmail = requireValidEmail(artistEmail, "Artist email");
 		Artist artist = artistRepository.findArtistByEmail(artistEmail);
 
 		if (artist == null) {
@@ -233,17 +237,19 @@ public class GallerySystemService {
 
 	@Transactional
 	public Administrator getAdministrator(String adminEmail) {
+		adminEmail = requireValidEmail(adminEmail, "Administrator email");
 		Administrator admin = administratorRepository.findAdministratorByEmail(adminEmail);
 		return admin;
 	}
 
 	@Transactional
 	public void deleteAdministrator(String email) {
-		email = requireNonBlank(email, "Administrator email");
+		email = requireValidEmail(email, "Administrator email");
 		administratorRepository.deleteById(email);
 
 	}
 
+	// Note: not to be exposed via REST API, only used internally for testing.
 	@Transactional
 	public void deleteAllAdministrators() {
 		administratorRepository.deleteAll();
@@ -251,6 +257,7 @@ public class GallerySystemService {
 
 	@Transactional
 	public User getUser(String email) {
+		email = requireValidEmail(email, "Email");
 		User user = userRepository.findUserByEmail(email);
 		return user;
 	}
@@ -281,12 +288,13 @@ public class GallerySystemService {
 
 	@Transactional
 	public ShoppingCart getShoppingCart(String email) {
+		email = requireValidEmail(email, "Customer email");
 		ShoppingCart sc = shoppingCartRepository.findShoppingCartByCustomerEmail(email);
 		return sc;
 	}
 
 	@Transactional
-	public List<ShoppingCart> getAllShoppingCart() {
+	public List<ShoppingCart> getAllShoppingCarts() {
 		return toList(shoppingCartRepository.findAll());
 	}
 
@@ -559,7 +567,11 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteAllArtPieces() {
-		artPieceRepository.deleteAll();
+		List<ArtPiece> artPieces = toList(artPieceRepository.findAll());
+
+		for (ArtPiece artPiece : artPieces) {
+			deleteArtpiece(artPiece.getArtID());
+		}
 	}
 
 	private <T> List<T> toList(Iterable<T> iterable) {

@@ -253,7 +253,7 @@ public class GallerySystemRestController {
 
 	@GetMapping(value = { "/shoppingCart", "/shoppingCart/" })
 	public List<ShoppingCartDto> getAllShopingCart() {
-		return service.getAllShoppingCart().stream().map(sc -> convertToDto(sc)).collect(Collectors.toList());
+		return service.getAllShoppingCarts().stream().map(sc -> convertToDto(sc)).collect(Collectors.toList());
 	}
 
 	@PostMapping(value = { "/create-shoppingCart/{email}", "/create-shoppingCart/{email}/" })
