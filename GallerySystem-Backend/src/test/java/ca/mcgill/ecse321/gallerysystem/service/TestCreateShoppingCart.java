@@ -99,7 +99,7 @@ public class TestCreateShoppingCart {
 			error = e.getMessage();
 		}
 		assertNull(shoppingCart);
-		assertEquals("Invalid Inputs!", error);
+		assertEquals("Customer email cannot be empty.", error);
 	}
 
 }

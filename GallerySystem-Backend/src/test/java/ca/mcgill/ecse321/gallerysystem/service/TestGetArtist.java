@@ -1,12 +1,10 @@
 package ca.mcgill.ecse321.gallerysystem.service;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
-
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,17 +22,17 @@ import ca.mcgill.ecse321.gallerysystem.model.User;
 
 @ExtendWith(MockitoExtension.class)
 public class TestGetArtist {
-    @Mock
+	@Mock
 	private ArtistRepository artistDao;
 	@Mock
 	private UserRepository userDao;
-	
+
 	@InjectMocks
 	private GallerySystemService service;
-	
-	private static final String ARTIST_KEY = "TestArtist";
-	private static final String NONEXISTING_KEY = "NotAnArtist";
-	
+
+	private static final String ARTIST_KEY = "TestArtist@test.com";
+	private static final String NONEXISTING_KEY = "NotAnArtist@test.com";
+
 	@BeforeEach
 	public void setMockOutput() {
 		lenient().when(artistDao.findArtistByEmail(anyString())).thenAnswer((InvocationOnMock invocation) -> {
@@ -53,8 +51,9 @@ public class TestGetArtist {
 		lenient().when(artistDao.save(any(Artist.class))).thenAnswer(returnParameterAsAnswer);
 		lenient().when(userDao.save(any(User.class))).thenAnswer(returnParameterAsAnswer);
 	}
+
 	/**
-	 * Test to get an existing artist with provided email and verify. 
+	 * Test to get an existing artist with provided email and verify.
 	 */
 	@Test
 	public void testGetExistingArtist() {
@@ -62,12 +61,11 @@ public class TestGetArtist {
 	}
 
 	/**
-	 * Test to get an non-existing artist with provided email and verify. 
+	 * Test to get an non-existing artist with provided email and verify.
 	 */
 	@Test
 	public void testGetNonExistingArtist() {
 		assertNull(service.getArtist(NONEXISTING_KEY));
 	}
 
-	
 }

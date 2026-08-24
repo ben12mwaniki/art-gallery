@@ -9,6 +9,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -353,13 +356,38 @@ public class GallerySystemService {
 							+ customerEmail);
 		}
 
+		SelectedItem existingItem = null;
+
+		for (SelectedItem item : shoppingCart.getSelectedItems()) {
+			if (item.getArtPiece().getArtID().equals(artPiece.getArtID())) {
+				existingItem = item;
+				break;
+			}
+		}
+
+		int requestedQuantity = quantity;
+		if (existingItem != null) {
+			requestedQuantity += existingItem.getItemQuantity();
+		}
+
+		if (requestedQuantity > artPiece.getQuantity()) {
+			throw new IllegalArgumentException(
+					"Requested quantity (" + requestedQuantity
+							+ ") exceeds available stock (" + artPiece.getQuantity()
+							+ ") for art piece ID: " + artID);
+		}
+
+		if (existingItem != null) {
+			existingItem.setItemQuantity(requestedQuantity);
+			return selectedItemRepository.save(existingItem);
+		}
+
 		SelectedItem selectedItem = new SelectedItem();
 		selectedItem.setArtPiece(artPiece);
 		selectedItem.setItemQuantity(quantity);
 		selectedItem.setShoppingCart(shoppingCart);
 
 		shoppingCart.getSelectedItems().add(selectedItem);
-
 		shoppingCartRepository.save(shoppingCart);
 
 		return selectedItem;
@@ -414,12 +442,15 @@ public class GallerySystemService {
 	@Transactional
 	public Order checkout(String customerEmail) {
 
+		customerEmail = requireValidEmail(customerEmail, "Customer email");
+
 		Customer customer = customerRepository.findCustomerByEmail(customerEmail);
 		if (customer == null) {
 			throw new IllegalArgumentException("Customer not found!");
 		}
 
-		ShoppingCart cart = shoppingCartRepository.findShoppingCartByCustomerEmail(customerEmail);
+		ShoppingCart cart = shoppingCartRepository
+				.findShoppingCartByCustomerEmail(customerEmail);
 		if (cart == null) {
 			throw new IllegalArgumentException("No cart found for this customer!");
 		}
@@ -428,55 +459,96 @@ public class GallerySystemService {
 			throw new IllegalArgumentException("Cannot checkout an empty cart!");
 		}
 
-		// --- stock/availability validation (fail fast, before mutating anything) ---
-		for (SelectedItem si : cart.getSelectedItems()) {
-			ArtPiece art = si.getArtPiece();
-			if (!art.isActive()) {
+		// Total all requested quantities by ArtPiece before changing any stock.
+		Map<Integer, Integer> requestedQuantities = new HashMap<>();
+		Map<Integer, ArtPiece> artPieces = new HashMap<>();
+
+		for (SelectedItem selectedItem : cart.getSelectedItems()) {
+			ArtPiece artPiece = selectedItem.getArtPiece();
+
+			requestedQuantities.merge(
+					artPiece.getArtID(),
+					selectedItem.getItemQuantity(),
+					Integer::sum);
+
+			artPieces.put(artPiece.getArtID(), artPiece);
+		}
+
+		// Validate the combined request for each ArtPiece.
+		for (Integer artID : requestedQuantities.keySet()) {
+			ArtPiece artPiece = artPieces.get(artID);
+			int requestedQuantity = requestedQuantities.get(artID);
+
+			if (!artPiece.isActive()) {
 				throw new IllegalArgumentException(
-						"Art piece '" + art.getArtName() + "' is no longer available!");
+						"Art piece '" + artPiece.getArtName()
+								+ "' is no longer available!");
 			}
-			if (art.getQuantity() < si.getItemQuantity()) {
+
+			if (artPiece.getQuantity() < requestedQuantity) {
 				throw new IllegalArgumentException(
-						"Insufficient stock for '" + art.getArtName() + "'!");
+						"Insufficient stock for '"
+								+ artPiece.getArtName() + "'!");
 			}
 		}
 
-		// --- build snapshot OrderItems + decrement stock ---
+		// Create immutable purchase snapshots.
 		Set<OrderItem> orderItems = new HashSet<>();
-		for (SelectedItem si : cart.getSelectedItems()) {
-			ArtPiece art = si.getArtPiece();
 
-			OrderItem oi = new OrderItem();
-			oi.setArtPiece(art);
-			oi.setQuantity(si.getItemQuantity());
-			oi.setListPrice(art.getPrice());
-			oi.setDiscountPercentage(art.getDiscountPercentage());
-			oi.setUnitPrice(calculateUnitPrice(art.getPrice(), art.getDiscountPercentage()));
-			oi.setCommissionPercentage(art.getCommissionPercentage());
-			oi.setArtName(art.getArtName());
-			oi.setDescription(art.getDescription());
-			orderItems.add(oi);
+		for (SelectedItem selectedItem : cart.getSelectedItems()) {
+			ArtPiece artPiece = selectedItem.getArtPiece();
 
-			art.setQuantity(art.getQuantity() - si.getItemQuantity());
-			artPieceRepository.save(art);
+			OrderItem orderItem = new OrderItem();
+			orderItem.setArtPiece(artPiece);
+			orderItem.setQuantity(selectedItem.getItemQuantity());
+			orderItem.setListPrice(artPiece.getPrice());
+			orderItem.setDiscountPercentage(artPiece.getDiscountPercentage());
+			orderItem.setUnitPrice(calculateUnitPrice(
+					artPiece.getPrice(),
+					artPiece.getDiscountPercentage()));
+			orderItem.setCommissionPercentage(artPiece.getCommissionPercentage());
+			orderItem.setArtName(artPiece.getArtName());
+			orderItem.setDescription(artPiece.getDescription());
+
+			orderItems.add(orderItem);
 		}
 
-		// --- allocate order number, retrying on rare collision ---
+		// Decrement each ArtPiece once, by its combined requested quantity.
+		for (Integer artID : requestedQuantities.keySet()) {
+			ArtPiece artPiece = artPieces.get(artID);
+			int requestedQuantity = requestedQuantities.get(artID);
+
+			artPiece.setQuantity(
+					artPiece.getQuantity() - requestedQuantity);
+
+			artPieceRepository.save(artPiece);
+		}
+
+		// Existing order-number allocation logic.
 		Order order = null;
 		int attempts = 0;
+
 		while (order == null && attempts < 5) {
 			try {
 				Integer orderNumber = generateOrderNumber();
-				order = createOrder(orderNumber, new Date(System.currentTimeMillis()), customer, orderItems);
+
+				order = createOrder(
+						orderNumber,
+						new Date(System.currentTimeMillis()),
+						customer,
+						orderItems);
+
 			} catch (DataIntegrityViolationException e) {
-				attempts++; // another checkout grabbed this number first, retry
+				attempts++;
 			}
 		}
+
 		if (order == null) {
-			throw new IllegalStateException("Could not allocate order number, please retry.");
+			throw new IllegalStateException(
+					"Could not allocate order number, please retry.");
 		}
 
-		// --- empty the cart only after the order is safely created ---
+		// This happens only after the order was created.
 		cart.getSelectedItems().clear();
 		shoppingCartRepository.save(cart);
 
