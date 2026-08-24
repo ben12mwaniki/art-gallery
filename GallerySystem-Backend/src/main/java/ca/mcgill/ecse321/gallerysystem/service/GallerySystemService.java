@@ -204,28 +204,29 @@ public class GallerySystemService {
 	@Transactional
 	public void deleteArtist(String artistEmail) {
 		Artist artist = artistRepository.findArtistByEmail(artistEmail);
+
 		if (artist == null) {
 			throw new IllegalArgumentException("Artist not found!");
 		}
 
-		Set<ArtPiece> pieces = artPieceRepository.findByArtist(artist);
+		Set<ArtPiece> artPieces = artPieceRepository.findByArtist(artist);
 
-		for (ArtPiece art : pieces) {
-			// detach historical OrderItems before the ArtPiece row disappears
-			Set<OrderItem> items = orderItemRepository.findByArtPiece(art);
-			for (OrderItem oi : items) {
-				oi.setArtPiece(null);
-				orderItemRepository.save(oi);
-			}
-			artPieceRepository.delete(art);
+		for (ArtPiece artPiece : artPieces) {
+			detachOrderItemsFromArtPiece(artPiece);
+			artPieceRepository.delete(artPiece);
 		}
 
 		artistRepository.delete(artist);
 	}
 
+	// Note: not to be exposed via REST API, only used internally for testing.
 	@Transactional
 	public void deleteAllArtists() {
-		artistRepository.deleteAll();
+		List<Artist> artists = toList(artistRepository.findAll());
+
+		for (Artist artist : artists) {
+			deleteArtist(artist.getEmail());
+		}
 	}
 
 	@Transactional
@@ -532,8 +533,15 @@ public class GallerySystemService {
 
 	@Transactional
 	public void deleteArtpiece(Integer artID) {
-		artPieceRepository.deleteById(artID);
+		ArtPiece artPiece = artPieceRepository.findArtPieceByArtID(artID);
 
+		if (artPiece == null) {
+			throw new IllegalArgumentException(
+					"No art piece found with ID: " + artID);
+		}
+
+		detachOrderItemsFromArtPiece(artPiece);
+		artPieceRepository.delete(artPiece);
 	}
 
 	@Transactional
@@ -547,6 +555,16 @@ public class GallerySystemService {
 			resultList.add(t);
 		}
 		return resultList;
+
+	}
+
+	private void detachOrderItemsFromArtPiece(ArtPiece artPiece) {
+		Set<OrderItem> orderItems = orderItemRepository.findByArtPiece(artPiece);
+
+		for (OrderItem orderItem : orderItems) {
+			orderItem.setArtPiece(null);
+			orderItemRepository.save(orderItem);
+		}
 	}
 
 }
