@@ -254,8 +254,8 @@ public class GallerySystemRestController {
 	}
 
 	@DeleteMapping(value = {
-			"/shoppingCart/{email}/items",
-			"/shoppingCart/{email}/items/"
+			"/shopping-carts/{email}/items",
+			"/shopping-carts/{email}/items/"
 	})
 	public ResponseEntity<Void> emptyShoppingCart(
 			@PathVariable("email") String customerEmail) {
