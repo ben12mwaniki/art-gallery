@@ -228,27 +228,30 @@ public class GallerySystemRestController {
 		return artistDto;
 	}
 
-	@PostMapping(value = { "/create-shoppingCart/{email}", "/create-shoppingCart/{email}/" })
-	public ShoppingCartDto createShoppingCart(@PathVariable("email") String customerEmail)
-			throws IllegalArgumentException {
-		ShoppingCart sc = service.createShoppingCart(customerEmail);
-		return convertToDto(sc);
+	@PostMapping(value = {
+			"/shopping-carts/{email}",
+			"/shopping-carts/{email}/"
+	})
+	public ResponseEntity<ShoppingCartDto> createShoppingCart(
+			@PathVariable("email") String customerEmail) {
+
+		ShoppingCart cart = service.createShoppingCart(customerEmail);
+
+		return new ResponseEntity<>(
+				convertToDto(cart),
+				HttpStatus.CREATED);
 	}
 
-	@GetMapping(value = { "/shoppingCart/{email}", "/shoppingCart/{email}/" })
-	public ShoppingCartDto getShoppingCart(@PathVariable("email") String customerEmail)
-			throws IllegalArgumentException {
-		return convertToDto(service.getShoppingCart(customerEmail));
-	}
+	@GetMapping(value = {
+			"/shopping-carts/{email}",
+			"/shopping-carts/{email}/"
+	})
+	public ShoppingCartDto getShoppingCart(
+			@PathVariable("email") String customerEmail) {
 
-	// Endpoint unnecessary as is, need to find a way to update the shopping cart
-	// with selected items, but this is not the right way to do it
-	// @PutMapping(value = { "/shoppingCart/{email}", "/shoppingCart/{email}" })
-	// public ShoppingCartDto updateShoppingCart(@RequestParam("email") String
-	// customerEmail, @PathVariable Integer scID) {
-	// ShoppingCart sc = service.appendItemToShoppingCart(scID, customerEmail);
-	// return convertToDto(sc);
-	// }
+		return convertToDto(
+				service.getShoppingCart(customerEmail));
+	}
 
 	@DeleteMapping(value = {
 			"/shoppingCart/{email}/items",
@@ -312,38 +315,41 @@ public class GallerySystemRestController {
 		return oDto;
 	}
 
-	// Only get selected items for a shopping cart, not all selected items in the
-	// system
-	@GetMapping(value = { "/SelectedItem", "/SelectedItem/" })
-	public List<SelectedItemDto> getAllSelectedItem() {
+	public ResponseEntity<SelectedItemDto> createSelectedItem(
+			@PathVariable("email") String customerEmail,
+			@RequestParam Integer artID,
+			@RequestParam Integer quantity) {
 
-		return service.getAllSelectedItem().stream().map(si -> convertToDto(si)).collect(Collectors.toList());
+		SelectedItem selectedItem = service.createSelectedItem(
+				artID, quantity, customerEmail);
 
+		return new ResponseEntity<>(
+				convertToDto(selectedItem),
+				HttpStatus.CREATED);
 	}
 
-	@PostMapping(value = { "/SelectedItem/{artID}", "/SelectedItem/{artID}/" })
-	public SelectedItemDto createSelectedItem(
-			@PathVariable("artID") Integer artID,
-			@RequestParam Integer quantity,
-			@RequestParam String customerEmail)
-			throws IllegalArgumentException {
+	@GetMapping(value = {
+			"/shopping-carts/{email}/items",
+			"/shopping-carts/{email}/items/"
+	})
+	public List<SelectedItemDto> getSelectedItems(
+			@PathVariable("email") String customerEmail) {
 
-		SelectedItem si = service.createSelectedItem(artID, quantity, customerEmail);
-
-		return convertToDto(si);
+		return service.getSelectedItems(customerEmail).stream()
+				.map(item -> convertToDto(item))
+				.collect(Collectors.toList());
 	}
 
-	@DeleteMapping(value = { "/SelectedItem/{itemID}", "/SelectedItem/{itemID}/" })
-	public ResponseEntity<String> deleteSelectedItem(@PathVariable("itemID") Integer itemID) {
-		service.deleteSelectedItem(itemID);
-		return new ResponseEntity<>("Selected Item deleted", HttpStatus.OK);
-	}
+	@DeleteMapping(value = {
+			"/shopping-carts/{email}/items/{itemID}",
+			"/shopping-carts/{email}/items/{itemID}/"
+	})
+	public ResponseEntity<Void> deleteSelectedItem(
+			@PathVariable("email") String customerEmail,
+			@PathVariable("itemID") Integer itemID) {
 
-	// Only for a selected cart
-	@DeleteMapping(value = { "/selecteditems", "/selecteditems/" })
-	public ResponseEntity<String> deleteAllSelectedItems() {
-		service.deleteAllSelectedItems();
-		return new ResponseEntity<>("All selected items deleted", HttpStatus.OK);
+		service.deleteSelectedItem(customerEmail, itemID);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	private SelectedItemDto convertToDto(SelectedItem si) {

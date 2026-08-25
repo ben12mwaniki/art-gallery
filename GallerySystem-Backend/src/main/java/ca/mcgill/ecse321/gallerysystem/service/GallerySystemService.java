@@ -404,6 +404,56 @@ public class GallerySystemService {
 		return selectedItem;
 	}
 
+	@Transactional
+	public List<SelectedItem> getSelectedItems(String customerEmail) {
+		customerEmail = requireValidEmail(customerEmail, "Customer email");
+
+		ShoppingCart cart = shoppingCartRepository
+				.findShoppingCartByCustomerEmail(customerEmail);
+
+		if (cart == null) {
+			throw new IllegalArgumentException(
+					"No shopping cart found for customer: " + customerEmail);
+		}
+
+		return new ArrayList<>(cart.getSelectedItems());
+	}
+
+	@Transactional
+	public void deleteSelectedItem(String customerEmail, Integer itemID) {
+		customerEmail = requireValidEmail(customerEmail, "Customer email");
+
+		if (itemID == null) {
+			throw new IllegalArgumentException(
+					"Selected item ID cannot be null.");
+		}
+
+		ShoppingCart cart = shoppingCartRepository
+				.findShoppingCartByCustomerEmail(customerEmail);
+
+		if (cart == null) {
+			throw new IllegalArgumentException(
+					"No shopping cart found for customer: " + customerEmail);
+		}
+
+		SelectedItem selectedItem = selectedItemRepository
+				.findSelectedItemByItemID(itemID);
+
+		if (selectedItem == null) {
+			throw new IllegalArgumentException(
+					"No selected item found with ID: " + itemID);
+		}
+
+		if (!selectedItem.getShoppingCart().getCartID()
+				.equals(cart.getCartID())) {
+			throw new IllegalArgumentException(
+					"Selected item does not belong to this shopping cart.");
+		}
+
+		cart.getSelectedItems().remove(selectedItem);
+		shoppingCartRepository.save(cart);
+	}
+
 	// Basic email format check: something@something.something
 	private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
 
