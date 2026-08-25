@@ -93,7 +93,7 @@ public class GallerySystemService {
 		if (artist == null) {
 			throw new IllegalArgumentException("No artist found with email: " + artistEmail);
 		}
-		return toList(artPieceRepository.findArtPiecesByArtist(artist));
+		return toList(artPieceRepository.findByArtist(artist));
 	}
 
 	@Transactional
@@ -294,6 +294,7 @@ public class GallerySystemService {
 		}
 
 		ShoppingCart sc = new ShoppingCart();
+		customer.setShoppingCart(sc);
 		sc.setCustomer(customer);
 		sc.setSelectedItems(new HashSet<>());
 		return shoppingCartRepository.save(sc);
@@ -672,6 +673,22 @@ public class GallerySystemService {
 			orderItem.setArtPiece(null);
 			orderItemRepository.save(orderItem);
 		}
+	}
+
+	@Transactional
+	public void emptyShoppingCart(String customerEmail) {
+		customerEmail = requireValidEmail(customerEmail, "Customer email");
+
+		ShoppingCart cart = shoppingCartRepository
+				.findShoppingCartByCustomerEmail(customerEmail);
+
+		if (cart == null) {
+			throw new IllegalArgumentException(
+					"No shopping cart found for customer: " + customerEmail);
+		}
+
+		cart.getSelectedItems().clear();
+		shoppingCartRepository.save(cart);
 	}
 
 }

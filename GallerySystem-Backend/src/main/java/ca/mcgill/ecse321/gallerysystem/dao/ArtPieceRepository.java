@@ -15,9 +15,9 @@ public interface ArtPieceRepository extends CrudRepository<ArtPiece, Integer> {
 
 	ArtPiece findArtPieceByArtistEmail(String email);
 
-	ArtPiece deleteArtPieceByArtID(Integer artID);
+	long deleteArtPieceByArtID(Integer artID);
 
-	ArtPiece deleteArtPieceByArtistEmail(String email);
+	long deleteArtPieceByArtistEmail(String email);
 
 	Set<ArtPiece> findByArtist(Artist artist);
 

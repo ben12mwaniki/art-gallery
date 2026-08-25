@@ -56,7 +56,7 @@ public class GallerySystemRestController {
 		return convertToDto(artpiece);
 	}
 
-	// Fix to only get art pieces from a specific artist
+	// Add another endpoint to get an artist's art pieces by their email
 	@GetMapping(value = { "/artpieces", "/artpieces/" })
 	public List<ArtPieceDto> getAllArtPieces() {
 		List<ArtPieceDto> artPieceDtos = new ArrayList<>();
@@ -66,17 +66,18 @@ public class GallerySystemRestController {
 		return artPieceDtos;
 	}
 
-	@DeleteMapping(value = { "/artpiece/{artID}", "/customer/{artID}/" })
-	public ResponseEntity<String> deleteArtpiece(@PathVariable("artID") Integer artID) {
+	@DeleteMapping(value = { "/artpiece/{artID}", "/artpiece/{artID}/" })
+	public ResponseEntity<String> deleteArtpiece(
+			@PathVariable("artID") Integer artID) {
+
 		service.deleteArtpiece(artID);
 		return new ResponseEntity<>("Artpiece deleted", HttpStatus.OK);
 	}
-
-	@DeleteMapping(value = { "/artpieces", "/artpieces/" })
-	public ResponseEntity<String> deleteAllArtPieces() {
-		service.deleteAllArtPieces();
-		return new ResponseEntity<>("All artpieces deleted", HttpStatus.OK);
-	}
+	// @DeleteMapping(value = { "/artpieces", "/artpieces/" })
+	// public ResponseEntity<String> deleteAllArtPieces() {
+	// service.deleteAllArtPieces();
+	// return new ResponseEntity<>("All artpieces deleted", HttpStatus.OK);
+	// }
 
 	private ArtPieceDto convertToDto(ArtPiece a) {
 		if (a == null) {
@@ -156,12 +157,6 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>("Customer deleted", HttpStatus.OK);
 	}
 
-	@DeleteMapping(value = { "/customers", "/customers/" })
-	public ResponseEntity<String> deleteAllCustomers() {
-		service.deleteAllCustomers();
-		return new ResponseEntity<>("All customers deleted", HttpStatus.OK);
-	}
-
 	private CustomerDto convertToDto(Customer c) {
 		if (c == null) {
 			throw new IllegalArgumentException("There is no such Customer!");
@@ -191,12 +186,6 @@ public class GallerySystemRestController {
 	public ResponseEntity<String> deleteArtist(@PathVariable("email") String email) {
 		service.deleteArtist(email);
 		return new ResponseEntity<>("Artist deleted", HttpStatus.OK);
-	}
-
-	@DeleteMapping(value = { "/artists", "/artists/" })
-	public ResponseEntity<String> deleteAllArtists() {
-		service.deleteAllArtists();
-		return new ResponseEntity<>("All artists deleted", HttpStatus.OK);
 	}
 
 	@PostMapping(value = { "/administrator/{name}", "/administrator/{name}/" })
@@ -231,23 +220,12 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>("Administrator deleted", HttpStatus.OK);
 	}
 
-	@DeleteMapping(value = { "/administrators", "/administrators/" })
-	public ResponseEntity<String> deleteAllAdministrators() {
-		service.deleteAllAdministrators();
-		return new ResponseEntity<>("All administrators deleted", HttpStatus.OK);
-	}
-
 	private ArtistDto convertToDto(Artist a) {
 		if (a == null) {
 			throw new IllegalArgumentException("There is no such Artist!");
 		}
 		ArtistDto artistDto = new ArtistDto(a.getUserName(), a.getEmail(), a.getPassword());
 		return artistDto;
-	}
-
-	@GetMapping(value = { "/shoppingCart", "/shoppingCart/" })
-	public List<ShoppingCartDto> getAllShopingCart() {
-		return service.getAllShoppingCarts().stream().map(sc -> convertToDto(sc)).collect(Collectors.toList());
 	}
 
 	@PostMapping(value = { "/create-shoppingCart/{email}", "/create-shoppingCart/{email}/" })
@@ -257,7 +235,7 @@ public class GallerySystemRestController {
 		return convertToDto(sc);
 	}
 
-	@GetMapping(value = { "/shoppingCart/{email}", "/create-shoppingCart/{email}/" })
+	@GetMapping(value = { "/shoppingCart/{email}", "/shoppingCart/{email}/" })
 	public ShoppingCartDto getShoppingCart(@PathVariable("email") String customerEmail)
 			throws IllegalArgumentException {
 		return convertToDto(service.getShoppingCart(customerEmail));
@@ -272,16 +250,15 @@ public class GallerySystemRestController {
 	// return convertToDto(sc);
 	// }
 
-	@DeleteMapping(value = { "/shoppingCart/{cartID}", "/shoppingCart/{cartID}/" })
-	public ResponseEntity<String> deleteShoppingCart(@PathVariable("email") Integer cartID) {
-		service.deleteShoppingCart(cartID);
-		return new ResponseEntity<>("Shopping Cart deleted", HttpStatus.OK);
-	}
+	@DeleteMapping(value = {
+			"/shoppingCart/{email}/items",
+			"/shoppingCart/{email}/items/"
+	})
+	public ResponseEntity<Void> emptyShoppingCart(
+			@PathVariable("email") String customerEmail) {
 
-	@DeleteMapping(value = { "/shoppingCarts", "/shoppingCarts/" })
-	public ResponseEntity<String> deleteAllShoppingCarts() {
-		service.deleteAllShoppingCarts();
-		return new ResponseEntity<>("All Shopping Carts deleted", HttpStatus.OK);
+		service.emptyShoppingCart(customerEmail);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	private ShoppingCartDto convertToDto(ShoppingCart sc) {
@@ -294,11 +271,14 @@ public class GallerySystemRestController {
 		return scDto;
 	}
 
+	// Fix to get order for a specific customer, not all orders in the system
 	@GetMapping(value = { "/orders", "/orders/" })
 	public List<OrderDto> getAllOrder() {
 		return service.getAllOrder().stream().map(o -> convertToDto(o)).collect(Collectors.toList());
 	}
 
+	// Fix to catch exceptions
+	@PostMapping(value = { "/checkout/{customerEmail}", "/checkout/{customerEmail}/" })
 	public OrderDto checkout(
 			@PathVariable("customerEmail") String customerEmail) throws IllegalArgumentException {
 
@@ -306,18 +286,23 @@ public class GallerySystemRestController {
 		return convertToDto(order);
 	}
 
-	@DeleteMapping(value = { "/order/{orderNumber}", "/shoppingCart/{orderNumber}/" })
-	public ResponseEntity<String> deleteOrder(@PathVariable("orderNumber") Integer orderNumber) {
+	@DeleteMapping(value = { "/order/{orderNumber}", "/order/{orderNumber}/" })
+	public ResponseEntity<String> deleteOrder(
+			@PathVariable("orderNumber") Integer orderNumber) {
+
 		service.deleteOrder(orderNumber);
 		return new ResponseEntity<>("Order deleted", HttpStatus.OK);
 	}
 
+	// Fix to delete all orders for a specific customer, not all orders in the
+	// system
 	@DeleteMapping(value = { "/orders", "/orders/" })
 	public ResponseEntity<String> deleteAllOrders() {
 		service.deleteAllOrders();
 		return new ResponseEntity<>("All orders deleted", HttpStatus.OK);
 	}
 
+	// DTO should return more information
 	private OrderDto convertToDto(Order o) {
 		if (o == null) {
 			throw new IllegalArgumentException("There is no such Order!");
@@ -327,6 +312,8 @@ public class GallerySystemRestController {
 		return oDto;
 	}
 
+	// Only get selected items for a shopping cart, not all selected items in the
+	// system
 	@GetMapping(value = { "/SelectedItem", "/SelectedItem/" })
 	public List<SelectedItemDto> getAllSelectedItem() {
 
@@ -352,6 +339,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>("Selected Item deleted", HttpStatus.OK);
 	}
 
+	// Only for a selected cart
 	@DeleteMapping(value = { "/selecteditems", "/selecteditems/" })
 	public ResponseEntity<String> deleteAllSelectedItems() {
 		service.deleteAllSelectedItems();
