@@ -669,6 +669,25 @@ public class GallerySystemService {
 		return o;
 	}
 
+	@Transactional(readOnly = true)
+	public List<Order> getOrdersByCustomer(String customerEmail) {
+		customerEmail = requireValidEmail(
+				customerEmail,
+				"Customer email");
+
+		Customer customer = customerRepository
+				.findCustomerByEmail(customerEmail);
+
+		if (customer == null) {
+			throw new IllegalArgumentException(
+					"No customer found with email: " + customerEmail);
+		}
+
+		return orderRepository
+				.findByCustomerEmailOrderByOrderDateDesc(customerEmail);
+	}
+
+	// Note: not to be exposed via REST API, only used internally for testing.
 	@Transactional
 	public List<Order> getAllOrder() {
 		return toList(orderRepository.findAll());

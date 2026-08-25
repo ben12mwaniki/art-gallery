@@ -25,6 +25,8 @@ import ca.mcgill.ecse321.gallerysystem.dto.ArtPieceDto;
 import ca.mcgill.ecse321.gallerysystem.dto.ArtistDto;
 import ca.mcgill.ecse321.gallerysystem.dto.CustomerDto;
 import ca.mcgill.ecse321.gallerysystem.dto.OrderDto;
+import ca.mcgill.ecse321.gallerysystem.dto.OrderItemDto;
+import ca.mcgill.ecse321.gallerysystem.model.OrderItem;
 
 import ca.mcgill.ecse321.gallerysystem.model.Administrator;
 import ca.mcgill.ecse321.gallerysystem.model.ArtPiece;
@@ -274,19 +276,30 @@ public class GallerySystemRestController {
 		return scDto;
 	}
 
-	// Fix to get order for a specific customer, not all orders in the system
-	@GetMapping(value = { "/orders", "/orders/" })
-	public List<OrderDto> getAllOrder() {
-		return service.getAllOrder().stream().map(o -> convertToDto(o)).collect(Collectors.toList());
+	@GetMapping(value = {
+			"/customers/{email}/orders",
+			"/customers/{email}/orders/"
+	})
+	public List<OrderDto> getOrdersByCustomer(
+			@PathVariable("email") String customerEmail) {
+
+		return service.getOrdersByCustomer(customerEmail).stream()
+				.map(order -> convertToDto(order))
+				.collect(Collectors.toList());
 	}
 
-	// Fix to catch exceptions
-	@PostMapping(value = { "/checkout/{customerEmail}", "/checkout/{customerEmail}/" })
-	public OrderDto checkout(
-			@PathVariable("customerEmail") String customerEmail) throws IllegalArgumentException {
+	@PostMapping(value = {
+			"/customers/{email}/checkout",
+			"/customers/{email}/checkout/"
+	})
+	public ResponseEntity<OrderDto> checkout(
+			@PathVariable("email") String customerEmail) {
 
 		Order order = service.checkout(customerEmail);
-		return convertToDto(order);
+
+		return new ResponseEntity<>(
+				convertToDto(order),
+				HttpStatus.CREATED);
 	}
 
 	@DeleteMapping(value = { "/order/{orderNumber}", "/order/{orderNumber}/" })
@@ -297,22 +310,39 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>("Order deleted", HttpStatus.OK);
 	}
 
-	// Fix to delete all orders for a specific customer, not all orders in the
-	// system
-	@DeleteMapping(value = { "/orders", "/orders/" })
-	public ResponseEntity<String> deleteAllOrders() {
-		service.deleteAllOrders();
-		return new ResponseEntity<>("All orders deleted", HttpStatus.OK);
-	}
-
-	// DTO should return more information
-	private OrderDto convertToDto(Order o) {
-		if (o == null) {
+	private OrderDto convertToDto(Order order) {
+		if (order == null) {
 			throw new IllegalArgumentException("There is no such Order!");
 		}
-		OrderDto oDto = new OrderDto(o.getOrderNumber(), o.getOrderDate(), o.getCustomer());
 
-		return oDto;
+		List<OrderItemDto> orderItemDtos = order.getOrderItems().stream()
+				.map(orderItem -> convertToDto(orderItem))
+				.collect(Collectors.toList());
+
+		return new OrderDto(
+				order.getOrderNumber(),
+				order.getOrderDate(),
+				order.getCustomer().getEmail(),
+				orderItemDtos);
+	}
+
+	private OrderItemDto convertToDto(OrderItem orderItem) {
+		Integer artPieceID = null;
+
+		if (orderItem.getArtPiece() != null) {
+			artPieceID = orderItem.getArtPiece().getArtID();
+		}
+
+		return new OrderItemDto(
+				orderItem.getOrderItemID(),
+				artPieceID,
+				orderItem.getQuantity(),
+				orderItem.getListPrice(),
+				orderItem.getUnitPrice(),
+				orderItem.getDiscountPercentage(),
+				orderItem.getCommissionPercentage(),
+				orderItem.getArtName(),
+				orderItem.getDescription());
 	}
 
 	@PostMapping(value = {

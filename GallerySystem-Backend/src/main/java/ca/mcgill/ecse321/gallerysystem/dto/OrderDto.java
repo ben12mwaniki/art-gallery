@@ -1,24 +1,25 @@
 package ca.mcgill.ecse321.gallerysystem.dto;
 
 import java.sql.Date;
-
-import ca.mcgill.ecse321.gallerysystem.model.Customer;
-import ca.mcgill.ecse321.gallerysystem.model.ShoppingCart;
+import java.util.List;
 
 public class OrderDto {
 
 	private Integer orderNumber;
 	private Date orderDate;
-	private ShoppingCart shoppingCart;
-	private Customer customer;
+	private String customerEmail;
+	private List<OrderItemDto> orderItems;
 
 	public OrderDto() {
 	}
 
-	public OrderDto(Integer orderNumber, Date orderDate, Customer customer) {
+	public OrderDto(Integer orderNumber, Date orderDate,
+			String customerEmail, List<OrderItemDto> orderItems) {
+
 		this.orderNumber = orderNumber;
 		this.orderDate = orderDate;
-		this.customer = customer;
+		this.customerEmail = customerEmail;
+		this.orderItems = orderItems;
 	}
 
 	public Integer getOrderNumber() {
@@ -29,11 +30,11 @@ public class OrderDto {
 		return orderDate;
 	}
 
-	public ShoppingCart getShoppingCart() {
-		return shoppingCart;
+	public String getCustomerEmail() {
+		return customerEmail;
 	}
 
-	public Customer getCustomer() {
-		return customer;
+	public List<OrderItemDto> getOrderItems() {
+		return orderItems;
 	}
 }
