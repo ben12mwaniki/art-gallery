@@ -315,6 +315,10 @@ public class GallerySystemRestController {
 		return oDto;
 	}
 
+	@PostMapping(value = {
+			"/shopping-carts/{email}/items",
+			"/shopping-carts/{email}/items/"
+	})
 	public ResponseEntity<SelectedItemDto> createSelectedItem(
 			@PathVariable("email") String customerEmail,
 			@RequestParam Integer artID,

@@ -16,7 +16,7 @@ public class ArtPiece {
 	private Integer discountPercentage;
 	private String description;
 	private float commissionPercentage;
-	private boolean active;
+	private boolean active = true;
 
 	private Integer artID;
 	private Artist artist;
