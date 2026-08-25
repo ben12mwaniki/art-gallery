@@ -1,18 +1,13 @@
 package ca.mcgill.ecse321.gallerysystem.controller;
 
-import java.sql.Date;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-//Building a RESTful Web Service, Controller
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,13 +27,11 @@ import ca.mcgill.ecse321.gallerysystem.dto.CustomerDto;
 import ca.mcgill.ecse321.gallerysystem.dto.OrderDto;
 
 import ca.mcgill.ecse321.gallerysystem.model.Administrator;
-
 import ca.mcgill.ecse321.gallerysystem.model.ArtPiece;
 import ca.mcgill.ecse321.gallerysystem.model.Artist;
 import ca.mcgill.ecse321.gallerysystem.model.Customer;
 import ca.mcgill.ecse321.gallerysystem.model.Order;
 import ca.mcgill.ecse321.gallerysystem.service.GallerySystemService;
-import ch.qos.logback.classic.Logger;
 import ca.mcgill.ecse321.gallerysystem.dto.ShoppingCartDto;
 import ca.mcgill.ecse321.gallerysystem.dto.UserDto;
 import ca.mcgill.ecse321.gallerysystem.dto.SelectedItemDto;
@@ -63,6 +56,7 @@ public class GallerySystemRestController {
 		return convertToDto(artpiece);
 	}
 
+	// Fix to only get art pieces from a specific artist
 	@GetMapping(value = { "/artpieces", "/artpieces/" })
 	public List<ArtPieceDto> getAllArtPieces() {
 		List<ArtPieceDto> artPieceDtos = new ArrayList<>();

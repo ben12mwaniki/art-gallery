@@ -85,7 +85,17 @@ public class GallerySystemService {
 		return artpiece;
 	}
 
-	// Note: not to be exposed via REST API, only used internally for testing.
+	// Add method to get all artpieces for a specific artist by their email
+	@Transactional
+	public List<ArtPiece> getArtPiecesByArtistEmail(String artistEmail) {
+		artistEmail = requireValidEmail(artistEmail, "Artist email");
+		Artist artist = artistRepository.findArtistByEmail(artistEmail);
+		if (artist == null) {
+			throw new IllegalArgumentException("No artist found with email: " + artistEmail);
+		}
+		return toList(artPieceRepository.findArtPiecesByArtist(artist));
+	}
+
 	@Transactional
 	public List<ArtPiece> getAllArtPieces() {
 		return toList(artPieceRepository.findAll());
