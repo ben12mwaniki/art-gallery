@@ -2,6 +2,7 @@ package ca.mcgill.ecse321.gallerysystem.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.sql.Date;
 import java.util.HashSet;
@@ -141,14 +142,13 @@ public class TestDeleteFromRepository {
 	}
 
 	@Test
+	@Transactional
 	public void testDeleteShoppingCart() {
 
 		Artist artist = new Artist();
-
 		artist.setEmail("artist@example.com");
 		artist.setPassword("password");
 		artist.setUserName("name");
-
 		artist = artistRepository.save(artist);
 
 		ArtPiece art = new ArtPiece();
@@ -158,18 +158,12 @@ public class TestDeleteFromRepository {
 		art.setPrice(1.1f);
 		art.setQuantity(1);
 		art.setArtist(artist);
-
-		/*
-		 * artID is @GeneratedValue and must not be assigned manually.
-		 */
 		art = artPieceRepository.save(art);
 
 		Customer customer = new Customer();
-
 		customer.setEmail("customer@example.com");
 		customer.setPassword("password");
 		customer.setUserName("name");
-
 		customer = customerRepository.save(customer);
 
 		/*
@@ -179,20 +173,12 @@ public class TestDeleteFromRepository {
 		ShoppingCart cart = new ShoppingCart();
 		cart.setCustomer(customer);
 		cart.setSelectedItems(new HashSet<SelectedItem>());
-
-		/*
-		 * cartID is @GeneratedValue and must not be assigned manually.
-		 */
 		cart = shoppingCartRepository.save(cart);
 
 		SelectedItem item = new SelectedItem();
 		item.setArtPiece(art);
 		item.setItemQuantity(20);
 		item.setShoppingCart(cart);
-
-		/*
-		 * itemID is @GeneratedValue and must not be assigned manually.
-		 */
 		item = selectedItemRepository.save(item);
 
 		/*
@@ -200,12 +186,22 @@ public class TestDeleteFromRepository {
 		 * synchronized.
 		 */
 		cart.getSelectedItems().add(item);
-
 		cart = shoppingCartRepository.save(cart);
 
+		entityManager.flush();
+		assertEquals(1, shoppingCartRepository.count());
+
+		/*
+		 * cascade = CascadeType.ALL + orphanRemoval = true on
+		 * ShoppingCart.selectedItems means deleting the cart must also
+		 * delete its SelectedItem(s).
+		 */
 		shoppingCartRepository.deleteById(cart.getCartID());
+		entityManager.flush();
+		entityManager.clear();
 
 		assertEquals(0, shoppingCartRepository.count());
+		assertEquals(0, selectedItemRepository.count());
 	}
 
 	@Test
