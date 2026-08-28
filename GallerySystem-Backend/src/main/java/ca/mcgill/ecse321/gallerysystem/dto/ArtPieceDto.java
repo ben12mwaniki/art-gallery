@@ -22,7 +22,7 @@ public class ArtPieceDto {
 	}
 
 	public ArtPieceDto(String artName, Integer quantity, float price, Integer discountPercentage,
-			Float commissionPercentage, String description, Integer artID, Artist artist) {
+			Float commissionPercentage, String description, Integer artID, String artistName) {
 		this.quantity = quantity;
 		this.price = price;
 		this.discountPercentage = discountPercentage;
@@ -30,7 +30,7 @@ public class ArtPieceDto {
 		this.artName = artName;
 		this.description = description;
 		this.artID = artID;
-		this.artpieceArtist = artist.getUserName();
+		this.artpieceArtist = artistName;
 	}
 
 	public Integer getQuantity() {

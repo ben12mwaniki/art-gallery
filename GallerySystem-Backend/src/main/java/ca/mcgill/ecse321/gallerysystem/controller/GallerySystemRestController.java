@@ -436,7 +436,7 @@ public class GallerySystemRestController {
 				a.getCommissionPercentage(),
 				a.getDescription(),
 				a.getArtID(),
-				a.getArtist()); // TODO: Replace with artistEmail to avoid exposing entity
+				a.getArtist().getUserName());
 	}
 
 	/**
