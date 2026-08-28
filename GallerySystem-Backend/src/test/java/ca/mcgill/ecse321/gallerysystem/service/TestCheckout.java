@@ -26,6 +26,7 @@ import ca.mcgill.ecse321.gallerysystem.dao.ArtPieceRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.CustomerRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.OrderRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.ShoppingCartRepository;
+import ca.mcgill.ecse321.gallerysystem.exception.ResourceNotFoundException;
 import ca.mcgill.ecse321.gallerysystem.model.ArtPiece;
 import ca.mcgill.ecse321.gallerysystem.model.Customer;
 import ca.mcgill.ecse321.gallerysystem.model.Order;
@@ -126,9 +127,9 @@ public class TestCheckout {
     public void testCheckoutCustomerNotFound() {
         lenient().when(customerDao.findCustomerByEmail("nobody@email.com")).thenReturn(null);
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        ResourceNotFoundException e = assertThrows(ResourceNotFoundException.class,
                 () -> service.checkout("nobody@email.com"));
-        assertEquals("Customer not found!", e.getMessage());
+        assertEquals("No customer found with email: nobody@email.com", e.getMessage());
     }
 
     @Test
@@ -136,7 +137,7 @@ public class TestCheckout {
         lenient().when(customerDao.findCustomerByEmail("alice@email.com")).thenReturn(customer);
         lenient().when(shoppingCartDao.findShoppingCartByCustomerEmail("alice@email.com")).thenReturn(null);
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        ResourceNotFoundException e = assertThrows(ResourceNotFoundException.class,
                 () -> service.checkout("alice@email.com"));
         assertEquals("No cart found for this customer!", e.getMessage());
     }

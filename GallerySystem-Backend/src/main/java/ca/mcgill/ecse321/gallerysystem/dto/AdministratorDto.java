@@ -2,31 +2,33 @@ package ca.mcgill.ecse321.gallerysystem.dto;
 
 public class AdministratorDto {
 
-	private String userRole = "admin";
-	private String email;
 	private String userName;
-	private String password;
-	
+	private String email;
+
 	public AdministratorDto() {
-		
-	}
-	
-	public AdministratorDto(String userName, String email, String password) {
-		this.email = email;
-		this.userName = userName;
-		this.password = password;
 	}
 
-	public String getUserRole() {
-		return this.userRole;
+	public AdministratorDto(String userName, String email) {
+		this.userName = userName;
+		this.email = email;
 	}
-	public String getUserName(){
-		return this.userName;
+
+	// Getters and Setters
+	public String getUserName() {
+		return userName;
 	}
-	public String getUserEmail() {
-		return this.email;
+
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
-	public String getPassword() {
-		return this.password;
+
+	public String getEmail() {
+		return email;
 	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	// No password getter!
 }

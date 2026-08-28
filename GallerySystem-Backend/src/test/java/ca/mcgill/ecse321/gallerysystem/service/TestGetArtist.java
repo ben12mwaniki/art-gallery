@@ -2,6 +2,7 @@ package ca.mcgill.ecse321.gallerysystem.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
@@ -17,6 +18,7 @@ import org.mockito.stubbing.Answer;
 
 import ca.mcgill.ecse321.gallerysystem.dao.ArtistRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.UserRepository;
+import ca.mcgill.ecse321.gallerysystem.exception.ResourceNotFoundException;
 import ca.mcgill.ecse321.gallerysystem.model.Artist;
 import ca.mcgill.ecse321.gallerysystem.model.User;
 
@@ -65,7 +67,7 @@ public class TestGetArtist {
 	 */
 	@Test
 	public void testGetNonExistingArtist() {
-		assertNull(service.getArtist(NONEXISTING_KEY));
+		assertThrows(ResourceNotFoundException.class, () -> service.getArtist(NONEXISTING_KEY));
 	}
 
 }

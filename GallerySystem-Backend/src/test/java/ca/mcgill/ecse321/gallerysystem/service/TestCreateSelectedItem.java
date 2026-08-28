@@ -24,6 +24,7 @@ import ca.mcgill.ecse321.gallerysystem.dao.OrderRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.SelectedItemRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.ShoppingCartRepository;
 import ca.mcgill.ecse321.gallerysystem.dao.UserRepository;
+import ca.mcgill.ecse321.gallerysystem.exception.ResourceNotFoundException;
 import ca.mcgill.ecse321.gallerysystem.model.ArtPiece;
 import ca.mcgill.ecse321.gallerysystem.model.SelectedItem;
 import ca.mcgill.ecse321.gallerysystem.model.ShoppingCart;
@@ -136,7 +137,7 @@ public class TestCreateSelectedItem {
 						null));
 
 		assertEquals(
-				"Customer email cannot be null or blank.",
+				"Customer email cannot be empty.",
 				exception.getMessage());
 	}
 
@@ -151,7 +152,7 @@ public class TestCreateSelectedItem {
 						"   "));
 
 		assertEquals(
-				"Customer email cannot be null or blank.",
+				"Customer email cannot be empty.",
 				exception.getMessage());
 	}
 
@@ -163,8 +164,8 @@ public class TestCreateSelectedItem {
 		when(artPieceDao.findArtPieceByArtID(artID))
 				.thenReturn(null);
 
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		ResourceNotFoundException exception = assertThrows(
+				ResourceNotFoundException.class,
 				() -> service.createSelectedItem(
 						artID,
 						1,
@@ -215,8 +216,8 @@ public class TestCreateSelectedItem {
 		when(shoppingCartDao.findShoppingCartByCustomerEmail(customerEmail))
 				.thenReturn(null);
 
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		ResourceNotFoundException exception = assertThrows(
+				ResourceNotFoundException.class,
 				() -> service.createSelectedItem(
 						1,
 						1,
