@@ -52,10 +52,9 @@ test {
 }
 
 // TEMPORARY exclusions
-sourceSets {
-    test {
-        java {
-            exclude 'ca/mcgill/ecse321/gallerysystem/integration_test/GallerySystemRestControllerIntegrationTests.java'
-        }
-    }
-}
+// sourceSets {
+//     test {
+//         java {
+//         }
+//     }
+// }
