@@ -45,8 +45,13 @@ import ca.mcgill.ecse321.gallerysystem.model.ShoppingCart;
 import ca.mcgill.ecse321.gallerysystem.model.User;
 import ca.mcgill.ecse321.gallerysystem.service.GallerySystemService;
 
+// Swagger imports
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @CrossOrigin(origins = "*")
 @RestController
+@Tag(name = "Gallery System API", description = "Art Gallery E-Commerce Backend")
 public class GallerySystemRestController {
 
 	@Autowired
@@ -56,9 +61,7 @@ public class GallerySystemRestController {
 	// 1. USER ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Get a user by email (can be Customer, Artist, or Administrator)
-	 */
+	@Operation(summary = "Get a user by email", description = "Returns a user (Customer, Artist, or Administrator) by their email address")
 	@GetMapping(value = { "/user/{email}", "/user/{email}/" })
 	public ResponseEntity<UserDto> getUser(@PathVariable("email") String email) {
 		User user = service.getUser(email);
@@ -69,9 +72,7 @@ public class GallerySystemRestController {
 	// 2. CUSTOMER ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Create a new customer
-	 */
+	@Operation(summary = "Create a new customer", description = "Registers a new customer in the gallery system")
 	@PostMapping(value = { "/customer", "/customer/" })
 	public ResponseEntity<CustomerDto> createCustomer(@Valid @RequestBody CustomerRequestDto requestDto) {
 		Customer customer = service.createCustomer(
@@ -82,18 +83,14 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(convertToDto(customer), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get a customer by email
-	 */
+	@Operation(summary = "Get a customer by email", description = "Returns a customer's details by their email address")
 	@GetMapping(value = { "/customer/{email}", "/customer/{email}/" })
 	public ResponseEntity<CustomerDto> getCustomer(@PathVariable("email") String email) {
 		Customer customer = service.getCustomer(email);
 		return new ResponseEntity<>(convertToDto(customer), HttpStatus.OK);
 	}
 
-	/**
-	 * Get all customers
-	 */
+	@Operation(summary = "Get all customers", description = "Returns a list of all registered customers")
 	@GetMapping(value = { "/customers", "/customers/" })
 	public ResponseEntity<List<CustomerDto>> getAllCustomers() {
 		List<CustomerDto> customers = service.getAllCustomers().stream()
@@ -102,9 +99,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(customers, HttpStatus.OK);
 	}
 
-	/**
-	 * Partially update a customer (only provided fields are updated)
-	 */
+	@Operation(summary = "Partially update a customer", description = "Updates only the fields provided in the request (PATCH)")
 	@PatchMapping(value = { "/customer/{email}", "/customer/{email}/" })
 	public ResponseEntity<CustomerDto> updateCustomerPartial(
 			@PathVariable("email") String email,
@@ -126,9 +121,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(convertToDto(updatedCustomer), HttpStatus.OK);
 	}
 
-	/**
-	 * Delete a customer by email
-	 */
+	@Operation(summary = "Delete a customer", description = "Deletes a customer by their email address")
 	@DeleteMapping(value = { "/customer/{email}", "/customer/{email}/" })
 	public ResponseEntity<String> deleteCustomer(@PathVariable("email") String email) {
 		service.deleteCustomer(email);
@@ -139,9 +132,7 @@ public class GallerySystemRestController {
 	// 3. ARTIST ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Create a new artist
-	 */
+	@Operation(summary = "Create a new artist", description = "Registers a new artist in the gallery system")
 	@PostMapping(value = { "/artist", "/artist/" })
 	public ResponseEntity<ArtistDto> createArtist(@Valid @RequestBody ArtistRequestDto requestDto) {
 		Artist artist = service.createArtist(
@@ -151,18 +142,14 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(convertToDto(artist), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get an artist by email
-	 */
+	@Operation(summary = "Get an artist by email", description = "Returns an artist's details by their email address")
 	@GetMapping(value = { "/artist/{email}", "/artist/{email}/" })
 	public ResponseEntity<ArtistDto> getArtist(@PathVariable("email") String email) {
 		Artist artist = service.getArtist(email);
 		return new ResponseEntity<>(convertToDto(artist), HttpStatus.OK);
 	}
 
-	/**
-	 * Get all artists
-	 */
+	@Operation(summary = "Get all artists", description = "Returns a list of all registered artists")
 	@GetMapping(value = { "/artists", "/artists/" })
 	public ResponseEntity<List<ArtistDto>> getAllArtists() {
 		List<ArtistDto> artists = service.getAllArtists().stream()
@@ -171,9 +158,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(artists, HttpStatus.OK);
 	}
 
-	/**
-	 * Delete an artist by email (also deletes all associated art pieces)
-	 */
+	@Operation(summary = "Delete an artist", description = "Deletes an artist and all their associated art pieces")
 	@DeleteMapping(value = { "/artist/{email}", "/artist/{email}/" })
 	public ResponseEntity<String> deleteArtist(@PathVariable("email") String email) {
 		service.deleteArtist(email);
@@ -184,9 +169,7 @@ public class GallerySystemRestController {
 	// 4. ADMINISTRATOR ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Create a new administrator
-	 */
+	@Operation(summary = "Create a new administrator", description = "Registers a new administrator in the gallery system")
 	@PostMapping(value = { "/administrator", "/administrator/" })
 	public ResponseEntity<AdministratorDto> createAdministrator(
 			@Valid @RequestBody AdministratorRequestDto requestDto) {
@@ -197,18 +180,14 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(convertToDto(administrator), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get an administrator by email
-	 */
+	@Operation(summary = "Get an administrator by email", description = "Returns an administrator's details by their email address")
 	@GetMapping(value = { "/administrator/{email}", "/administrator/{email}/" })
 	public ResponseEntity<AdministratorDto> getAdministrator(@PathVariable("email") String email) {
 		Administrator administrator = service.getAdministrator(email);
 		return new ResponseEntity<>(convertToDto(administrator), HttpStatus.OK);
 	}
 
-	/**
-	 * Delete an administrator by email
-	 */
+	@Operation(summary = "Delete an administrator", description = "Deletes an administrator by their email address")
 	@DeleteMapping(value = { "/administrator/{email}", "/administrator/{email}/" })
 	public ResponseEntity<String> deleteAdministrator(@PathVariable("email") String email) {
 		service.deleteAdministrator(email);
@@ -219,9 +198,7 @@ public class GallerySystemRestController {
 	// 5. ART PIECE ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Create a new art piece
-	 */
+	@Operation(summary = "Create a new art piece", description = "Adds a new art piece to the gallery")
 	@PostMapping(value = { "/artpiece", "/artpiece/" })
 	public ResponseEntity<ArtPieceDto> createArtPiece(@Valid @RequestBody ArtPieceRequestDto requestDto) {
 		ArtPiece artpiece = service.createArtPiece(
@@ -235,9 +212,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(convertToDto(artpiece), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get all art pieces
-	 */
+	@Operation(summary = "Get all art pieces", description = "Returns a list of all art pieces in the gallery")
 	@GetMapping(value = { "/artpieces", "/artpieces/" })
 	public ResponseEntity<List<ArtPieceDto>> getAllArtPieces() {
 		List<ArtPieceDto> artPieceDtos = new ArrayList<>();
@@ -247,9 +222,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(artPieceDtos, HttpStatus.OK);
 	}
 
-	/**
-	 * Delete an art piece by ID
-	 */
+	@Operation(summary = "Delete an art piece", description = "Deletes an art piece by its ID")
 	@DeleteMapping(value = { "/artpiece/{artID}", "/artpiece/{artID}/" })
 	public ResponseEntity<String> deleteArtpiece(@PathVariable("artID") Integer artID) {
 		service.deleteArtpiece(artID);
@@ -260,27 +233,21 @@ public class GallerySystemRestController {
 	// 6. SHOPPING CART ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Create a shopping cart for a customer
-	 */
+	@Operation(summary = "Create a shopping cart", description = "Creates a new shopping cart for a customer")
 	@PostMapping(value = { "/shopping-carts/{email}", "/shopping-carts/{email}/" })
 	public ResponseEntity<ShoppingCartDto> createShoppingCart(@PathVariable("email") String customerEmail) {
 		ShoppingCart cart = service.createShoppingCart(customerEmail);
 		return new ResponseEntity<>(convertToDto(cart), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get a customer's shopping cart
-	 */
+	@Operation(summary = "Get a shopping cart", description = "Returns a customer's shopping cart")
 	@GetMapping(value = { "/shopping-carts/{email}", "/shopping-carts/{email}/" })
 	public ResponseEntity<ShoppingCartDto> getShoppingCart(@PathVariable("email") String customerEmail) {
 		ShoppingCart cart = service.getShoppingCart(customerEmail);
 		return new ResponseEntity<>(convertToDto(cart), HttpStatus.OK);
 	}
 
-	/**
-	 * Add an item to the shopping cart
-	 */
+	@Operation(summary = "Add an item to cart", description = "Adds an art piece to the shopping cart")
 	@PostMapping(value = { "/shopping-carts/{email}/items", "/shopping-carts/{email}/items/" })
 	public ResponseEntity<SelectedItemDto> createSelectedItem(
 			@PathVariable("email") String customerEmail,
@@ -294,9 +261,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(convertToDto(selectedItem), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get all items in a customer's shopping cart
-	 */
+	@Operation(summary = "Get cart items", description = "Returns all items in a customer's shopping cart")
 	@GetMapping(value = { "/shopping-carts/{email}/items", "/shopping-carts/{email}/items/" })
 	public ResponseEntity<List<SelectedItemDto>> getSelectedItems(@PathVariable("email") String customerEmail) {
 		List<SelectedItemDto> items = service.getSelectedItems(customerEmail).stream()
@@ -305,9 +270,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(items, HttpStatus.OK);
 	}
 
-	/**
-	 * Remove a specific item from the shopping cart
-	 */
+	@Operation(summary = "Remove an item from cart", description = "Removes a specific item from the shopping cart")
 	@DeleteMapping(value = { "/shopping-carts/{email}/items/{itemID}", "/shopping-carts/{email}/items/{itemID}/" })
 	public ResponseEntity<Void> deleteSelectedItem(
 			@PathVariable("email") String customerEmail,
@@ -317,9 +280,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
-	/**
-	 * Empty the entire shopping cart
-	 */
+	@Operation(summary = "Empty the shopping cart", description = "Removes all items from the shopping cart")
 	@DeleteMapping(value = { "/shopping-carts/{email}/items", "/shopping-carts/{email}/items/" })
 	public ResponseEntity<Void> emptyShoppingCart(@PathVariable("email") String customerEmail) {
 		service.emptyShoppingCart(customerEmail);
@@ -330,18 +291,14 @@ public class GallerySystemRestController {
 	// 7. ORDER ENDPOINTS
 	// ============================================================
 
-	/**
-	 * Checkout: Convert shopping cart to an order
-	 */
+	@Operation(summary = "Checkout", description = "Converts the shopping cart into an order")
 	@PostMapping(value = { "/customers/{email}/checkout", "/customers/{email}/checkout/" })
 	public ResponseEntity<OrderDto> checkout(@PathVariable("email") String customerEmail) {
 		Order order = service.checkout(customerEmail);
 		return new ResponseEntity<>(convertToDto(order), HttpStatus.CREATED);
 	}
 
-	/**
-	 * Get all orders for a customer
-	 */
+	@Operation(summary = "Get orders by customer", description = "Returns all orders for a specific customer")
 	@GetMapping(value = { "/customers/{email}/orders", "/customers/{email}/orders/" })
 	public ResponseEntity<List<OrderDto>> getOrdersByCustomer(@PathVariable("email") String customerEmail) {
 		List<OrderDto> orders = service.getOrdersByCustomer(customerEmail).stream()
@@ -350,9 +307,7 @@ public class GallerySystemRestController {
 		return new ResponseEntity<>(orders, HttpStatus.OK);
 	}
 
-	/**
-	 * Delete an order by order number
-	 */
+	@Operation(summary = "Delete an order", description = "Deletes an order by its order number")
 	@DeleteMapping(value = { "/order/{orderNumber}", "/order/{orderNumber}/" })
 	public ResponseEntity<String> deleteOrder(@PathVariable("orderNumber") Integer orderNumber) {
 		service.deleteOrder(orderNumber);
@@ -422,7 +377,6 @@ public class GallerySystemRestController {
 
 	/**
 	 * Convert ArtPiece entity to ArtPieceDto
-	 * Note: This exposes the full Artist entity in the response
 	 */
 	private ArtPieceDto convertToDto(ArtPiece a) {
 		if (a == null) {
