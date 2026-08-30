@@ -1,151 +1,332 @@
 # Art Gallery — Backend Technical Documentation
 
 > For installation instructions and running the application locally, see the [README](../README.md).
+>
+> For the project's development history, design changes, and evolution from the original codebase, see the [Project Evolution](../README.md#project-evolution) section.
 
 ---
 
 # Overview
 
-Art Gallery is a Spring Boot backend powering a multi-tier art marketplace connecting artists with customers. The backend exposes a REST API consumed by both a web frontend and an Android client.
+Art Gallery is a Spring Boot backend powering a multi-tier art marketplace connecting artists with customers. The backend exposes a REST API designed to support the project's web and mobile clients.
 
 The application allows:
 
-- Artists to list and manage art pieces for sale
-- Customers to browse art, manage a shopping cart, and place orders
-- Administrators to oversee the platform
+* Artists to list and manage artwork for sale
+* Customers to browse available artwork, manage a shopping cart, and place orders
+* Administrators to manage platform-level information
+
+The backend has been substantially refactored from its original university-project implementation. The current implementation includes a refined domain model, structured request and response DTOs, service-layer validation, centralized exception handling, shopping-cart checkout, purchase history, and automated testing.
+
+For a detailed history of these changes, see the [Project Evolution](../README.md#project-evolution) section of the project README.
 
 ---
 
 # Architecture
 
-The application follows a layered architecture:
+The application follows a layered backend architecture:
 
+```text
+Vue Frontend
+      │
+      ▼
+REST Controller
+      │
+      ▼
+Service Layer
+      │
+      ▼
+Repository (DAO) Layer
+      │
+      ▼
+PostgreSQL Database
 ```
-Client (Web / Android)
-        │
-        ▼
-  REST Controller
-        │
-        ▼
-   Service Layer
-        │
-        ▼
- Repository (DAO) Layer
-        │
-        ▼
-  PostgreSQL Database
-```
-![architecture model](../assets/architecture%20model.png)
+
+![Architecture model](../assets/architecture%20model.png)
+
+The application separates HTTP handling, business logic, persistence, domain entities, and API representations into distinct layers.
 
 ## Controller Layer
 
-`GallerySystemRestController` defines the application's HTTP routes and handles request/response mapping for every entity in the system.
+`GallerySystemRestController` defines the application's HTTP routes and handles request and response mapping.
+
+The controller:
+
+* Receives HTTP requests from clients
+* Accepts structured request DTOs
+* Delegates business operations to `GallerySystemService`
+* Converts domain entities into response DTOs
+* Returns appropriate HTTP status codes
+* Exposes API operations through REST endpoints
+
+Request validation is supported through Bean Validation annotations on request DTOs.
+
+Swagger/OpenAPI annotations are used to document the REST API and provide an interactive view of the available endpoints.
 
 ## Service Layer
 
-`GallerySystemService` contains the application's business logic: input validation, entity relationships, and orchestration of repository calls. This is where rules such as "an art piece must belong to a real artist" or "a shopping cart's items must be tracked correctly" are enforced.
+`GallerySystemService` contains the application's business logic, including validation, entity relationships, transaction orchestration, and repository operations.
+
+This layer enforces rules such as:
+
+* An art piece must reference an existing artist
+* A selected item must reference an existing art piece and shopping cart
+* Selected quantities must be valid relative to available inventory
+* A customer has one shopping cart
+* Checkout converts the customer's current cart contents into an order
+* Purchase information is preserved in `OrderItem` records
+
+Keeping these rules in the service layer prevents business logic from being tied directly to HTTP requests or database operations.
 
 ## Repository (DAO) Layer
 
-Built on Spring Data JPA. Each entity has a corresponding repository interface (e.g. `ArtistRepository`, `ArtPieceRepository`) extending `CrudRepository`. Most queries are Spring Data **derived query methods** — generated automatically from method names (e.g. `findArtistByEmail`) — rather than hand-written SQL.
+The repository layer is built using Spring Data JPA. Repository interfaces such as `ArtistRepository`, `ArtPieceRepository`, and `OrderRepository` provide access to the underlying persistence layer.
+
+Most repository queries use **derived query methods**, which Spring Data generates automatically from method names rather than relying on hand-written SQL. For example, methods such as `findArtistByEmail` allow entities to be retrieved using their domain attributes.
 
 ## Persistence
 
-Entities are mapped to PostgreSQL tables using JPA/Hibernate annotations. `User` and its subtypes use the `JOINED` inheritance strategy, meaning each user type has its own table sharing a common primary key (`email`) with a base `users` table.
+Entities are mapped to PostgreSQL tables using JPA/Hibernate annotations.
+
+`User` and its subtypes use the `JOINED` inheritance strategy. The concrete user types — `Customer`, `Artist`, and `Administrator` — therefore share the common `User` hierarchy while maintaining their own subtype tables.
+
+Entity relationships are explicitly represented in the persistence model. In particular:
+
+* A customer has one shopping cart
+* A shopping cart contains selected items
+* Selected items reference artwork
+* An order belongs to a customer
+* An order contains order items
+
+These relationships, together with cascading and orphan-removal behavior where appropriate, help maintain data integrity across related entities.
 
 ---
 
 # Domain Model
+
 ![Domain model](../assets/Final_domain_model.png)
+
+The domain model represents the core marketplace workflow from artwork management and shopping-cart operations through checkout and order history.
 
 ## Main Entities
 
-| Entity | Purpose |
-|---|---|
-| `User` | Abstract base entity; `email` is the primary key |
-| `Artist` | A user who lists and sells art pieces |
-| `Customer` | A user who browses, purchases, and manages a shopping cart |
-| `Administrator` | A user who manages the platform |
-| `ArtPiece` | A piece of art for sale — price, quantity, discount, and commission percentage |
-| `ShoppingCart` | One per customer; holds selected items |
-| `SelectedItem` | A line item: an `ArtPiece` plus a chosen quantity |
-| `Order` | A finalized purchase, linking a customer, a shopping cart, and a date |
-| `DeliveryMethod` | Enum: `pickup` or `delivery` |
+| Entity           | Purpose                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| `User`           | Base entity for users of the system; `email` is the primary key                                   |
+| `Artist`         | A user who lists and sells art pieces                                                             |
+| `Customer`       | A user who browses, purchases, and manages a shopping cart                                        |
+| `Administrator`  | A user who manages platform-level information                                                     |
+| `ArtPiece`       | A piece of art for sale, including price, quantity, discount, commission, and description         |
+| `ShoppingCart`   | A customer's active cart containing selected items                                                |
+| `SelectedItem`   | A shopping-cart line item representing an art piece and chosen quantity                           |
+| `Order`          | A finalized purchase belonging to a customer                                                      |
+| `OrderItem`      | A record of an individual item purchased as part of an order, including purchase-time information |
+| `DeliveryMethod` | Enum representing the available delivery methods                                                  |
+
+## Key Relationships
+
+The entity relationships are structured around the distinction between a customer's **active shopping cart** and their **finalized order history**.
+
+* Each `Customer` has **one** `ShoppingCart`.
+* A `ShoppingCart` contains **many** `SelectedItem` objects.
+* Each `SelectedItem` references **one** `ArtPiece`.
+* An `Order` belongs to **one** `Customer`.
+* An `Order` contains **many** `OrderItem` objects.
+* Each `OrderItem` represents an artwork purchased as part of an order.
+
+The `OrderItem` entity stores purchase-time information rather than relying exclusively on the current state of the associated `ArtPiece`. This allows historical orders to retain relevant information such as the artwork name, description, list price, effective unit price, discount, and commission even if the original artwork listing is subsequently modified or removed.
 
 ---
 
 # API Design
 
-The API follows a consistent CRUD pattern per entity: create, retrieve (single/all), and delete endpoints for each of `Artist`, `Customer`, `Administrator`, `ArtPiece`, `ShoppingCart`, `SelectedItem`, and `Order`.
+The REST API is exposed through `GallerySystemRestController`. Request DTOs are used for client-provided data, while response DTOs are used to represent data returned to clients.
 
-| Resource                | Method   | Endpoint                    | Description                            |
-| ----------------------- | -------- | --------------------------- | -------------------------------------- |
-| **Artists**             | `POST`   | `/artists`                  | Create an artist account               |
-|                         | `GET`    | `/artists/{email}`          | Retrieve an artist                     |
-|                         | `GET`    | `/artists`                  | Retrieve all artists                   |
-|                         | `DELETE` | `/artists/{email}`          | Delete an artist                       |
-| **Customers**           | `POST`   | `/customers`                | Create a customer account              |
-|                         | `GET`    | `/customers/{email}`        | Retrieve a customer                    |
-|                         | `GET`    | `/customers`                | Retrieve all customers                 |
-|                         | `DELETE` | `/customers/{email}`        | Delete a customer                      |
-| **Administrators**      | `POST`   | `/administrators`           | Create an administrator account        |
-|                         | `GET`    | `/administrators/{email}`   | Retrieve an administrator              |
-|                         | `GET`    | `/administrators`           | Retrieve all administrators            |
-|                         | `DELETE` | `/administrators/{email}`   | Delete an administrator                |
-| **Art Pieces**          | `POST`   | `/artpieces`                | Create an art piece                    |
-|                         | `GET`    | `/artpieces/{id}`           | Retrieve an art piece                  |
-|                         | `GET`    | `/artpieces`                | Retrieve all art pieces                |
-|                         | `DELETE` | `/artpieces/{id}`           | Delete an art piece                    |
-| **Shopping Carts**      | `POST`   | `/shoppingcarts`            | Create a shopping cart                 |
-|                         | `GET`    | `/shoppingcarts/{email}`    | Retrieve a customer's shopping cart    |
-|                         | `GET`    | `/shoppingcarts`            | Retrieve all shopping carts            |
-|                         | `DELETE` | `/shoppingcarts/{id}`       | Delete a shopping cart                 |
-| **Selected Items**      | `POST`   | `/selecteditems`            | Create a selected item                 |
-|                         | `GET`    | `/selecteditems`            | Retrieve all selected items            |
-|                         | `DELETE` | `/selecteditems/{id}`       | Delete a selected item                 |
-| **Shopping Cart Items** | `POST`   | `/shoppingcarts/{id}/items` | Add a selected item to a shopping cart |
-| **Orders**              | `POST`   | `/orders`                   | Create an order                        |
-|                         | `GET`    | `/orders/{orderNumber}`     | Retrieve an order                      |
-|                         | `GET`    | `/orders`                   | Retrieve all orders                    |
-|                         | `DELETE` | `/orders/{orderNumber}`     | Delete an order                        |
+## Users
 
+| Method | Endpoint        | Description              |
+| ------ | --------------- | ------------------------ |
+| `GET`  | `/user/{email}` | Retrieve a user by email |
 
-## Capabilities by Role
+## Customers
 
-### Artist
-- Register an account
-- Create, view, and remove art pieces
+| Method   | Endpoint            | Description                 |
+| -------- | ------------------- | --------------------------- |
+| `POST`   | `/customer`         | Create a customer account   |
+| `GET`    | `/customer/{email}` | Retrieve a customer         |
+| `GET`    | `/customers`        | Retrieve all customers      |
+| `PATCH`  | `/customer/{email}` | Partially update a customer |
+| `DELETE` | `/customer/{email}` | Delete a customer           |
 
-### Customer
-- Register an account
-- Browse all available art pieces
-- Add items to a shopping cart
-- Place an order with a chosen delivery method
+## Artists
 
-### Administrator
-- Register an account
-- View and manage platform users
+| Method   | Endpoint          | Description              |
+| -------- | ----------------- | ------------------------ |
+| `POST`   | `/artist`         | Create an artist account |
+| `GET`    | `/artist/{email}` | Retrieve an artist       |
+| `GET`    | `/artists`        | Retrieve all artists     |
+| `DELETE` | `/artist/{email}` | Delete an artist         |
+
+## Administrators
+
+| Method   | Endpoint                 | Description                     |
+| -------- | ------------------------ | ------------------------------- |
+| `POST`   | `/administrator`         | Create an administrator account |
+| `GET`    | `/administrator/{email}` | Retrieve an administrator       |
+| `DELETE` | `/administrator/{email}` | Delete an administrator         |
+
+## Art Pieces
+
+| Method   | Endpoint            | Description             |
+| -------- | ------------------- | ----------------------- |
+| `POST`   | `/artpiece`         | Create an art piece     |
+| `GET`    | `/artpieces`        | Retrieve all art pieces |
+| `DELETE` | `/artpiece/{artID}` | Delete an art piece     |
+
+## Shopping Carts
+
+| Method   | Endpoint                                 | Description                             |
+| -------- | ---------------------------------------- | --------------------------------------- |
+| `POST`   | `/shopping-carts/{email}`                | Create a shopping cart for a customer   |
+| `GET`    | `/shopping-carts/{email}`                | Retrieve a customer's shopping cart     |
+| `POST`   | `/shopping-carts/{email}/items`          | Add an art piece to the customer's cart |
+| `GET`    | `/shopping-carts/{email}/items`          | Retrieve the customer's cart items      |
+| `DELETE` | `/shopping-carts/{email}/items/{itemID}` | Remove an item from the cart            |
+| `DELETE` | `/shopping-carts/{email}/items`          | Empty the shopping cart                 |
+
+## Orders
+
+| Method   | Endpoint                      | Description                                               |
+| -------- | ----------------------------- | --------------------------------------------------------- |
+| `POST`   | `/customers/{email}/checkout` | Checkout the customer's shopping cart and create an order |
+| `GET`    | `/customers/{email}/orders`   | Retrieve all orders belonging to a customer               |
+| `DELETE` | `/order/{orderNumber}`        | Delete an order                                           |
+
+### Checkout Workflow
+
+Order creation is exposed as a **checkout operation** rather than as a generic order-construction endpoint.
+
+During checkout, the backend:
+
+1. Validates the customer and their shopping cart.
+2. Retrieves the selected items currently in the cart.
+3. Validates that the requested artwork is still active.
+4. Verifies that sufficient inventory is available.
+5. Creates `OrderItem` records containing purchase-time information.
+6. Decrements the corresponding artwork inventory.
+7. Creates the `Order`.
+8. Clears the customer's shopping cart.
+
+This separates **temporary cart state** from **persistent order history**. The shopping cart represents the customer's current selections, while the order represents a completed purchase.
+
+---
+
+# DTO Design
+
+The REST layer uses Data Transfer Objects (DTOs) to separate the API representation from the underlying JPA persistence model.
+
+## Request DTOs
+
+Request DTOs define the information accepted from clients and provide declarative input validation using Bean Validation annotations.
+
+Client-provided resource data is submitted through structured request bodies rather than relying on URL parameters for request data.
+
+For example, `SelectedItemRequestDto` accepts:
+
+* `artID` — the artwork being added to the cart
+* `quantity` — the requested quantity
+
+Both fields are required and must contain valid positive values.
+
+## Response DTOs
+
+Response DTOs expose information required by the client without directly serializing JPA entities.
+
+For example, `ArtPieceDto` represents an artwork returned by the API and includes information such as:
+
+* Artwork ID
+* Name
+* Price
+* Available quantity
+* Discount
+* Commission percentage
+* Description
+* Associated artist
+
+Using dedicated response DTOs prevents the persistence model and its internal relationships from being exposed directly through JSON serialization.
+
+---
+
+# Error Handling
+
+The API uses centralized exception handling to provide consistent HTTP error responses.
+
+The global exception handler currently handles:
+
+* Invalid business or request arguments — `400 Bad Request`
+* Request validation failures — `400 Bad Request`
+* Missing resources — `404 Not Found`
+* Unexpected server errors — `500 Internal Server Error`
+
+Validation failures provide both a human-readable summary and field-level validation messages where applicable.
+
+Centralizing exception handling keeps error behavior consistent across REST endpoints and prevents individual controller methods from having to implement repetitive error-handling logic.
+
+---
+
+# Capabilities by Role
+
+## Artist
+
+* Register an account
+* Create and manage artwork listings
+* Set artwork price, inventory quantity, discount, and commission
+* Provide artwork descriptions
+* View available artwork
+* Remove artwork
+
+## Customer
+
+* Register an account
+* Browse available artwork
+* Create and manage a shopping cart
+* Add artwork to the cart
+* Specify quantities
+* Remove individual cart items
+* Empty the shopping cart
+* Validate requested quantities against available inventory
+* Checkout and create an order
+* Retrieve previous orders
+
+## Administrator
+
+* Register an account
+* View and manage platform-level information
 
 ---
 
 # Data Validation & Integrity
 
-The service layer enforces the following rules on write operations:
+The service and API layers enforce validation and data-integrity rules on write operations.
 
-- All required text fields (username, email, password, address, art piece name/description) are trimmed and rejected if blank
-- Email fields are validated against a standard email format
-- Email uniqueness is enforced across all user types, since `email` is the shared primary key
-- Foreign key references (e.g. an art piece's artist, a selected item's art piece) are verified to exist before the referencing entity is created
-- Selected item quantity is checked against the art piece's available stock
+These include:
 
-This validation layer has been an active area of hardening — several gaps (silent null relationships, unvalidated duplicate emails, unbounded numeric inputs) have been identified and fixed through manual API testing and expanded automated test coverage.
+* Required text fields such as username, email, password, address, artwork name, and description are trimmed and rejected when blank.
+* Email fields are validated against a standard email format.
+* Email uniqueness is enforced across user types because `email` is the shared primary key in the user hierarchy.
+* Foreign-key references, such as an artwork's artist or a selected item's artwork and shopping cart, are verified before dependent entities are created.
+* Selected-item quantities are checked against available artwork inventory.
+* Required entity relationships are validated before dependent entities are persisted.
+* Request DTOs apply declarative validation constraints before invalid requests reach the service layer.
+* Service-layer validation provides explicit application exceptions rather than allowing invalid relationships or null references to result in unexpected failures.
+
+Data integrity has been a major focus of the backend refactoring. Entity relationships, persistence behavior, deletion operations, and service-layer validation have been tested and hardened throughout the project's evolution.
 
 ---
 
-
 # Testing Strategy
 
-The project uses two complementary testing approaches: **service-layer unit tests** and **persistence/integration tests**.
+The backend has been tested at multiple levels to validate both individual business rules and complete application behavior.
 
 ## Unit Tests
 
@@ -160,15 +341,15 @@ The service tests cover:
 * Duplicate user email handling
 * Missing referenced entities
 * Invalid quantities and numeric values
-* Regression cases for previously identified service-layer bugs
+* Regression cases for previously identified service-layer defects
 
-For example, the shopping cart tests verify that a newly created cart initializes its selected-item collection correctly, preventing failures when items are subsequently added.
+Shopping-cart tests also verify that newly created carts correctly initialize their selected-item collections and can subsequently accept cart items.
 
 ## Persistence and Integration Tests
 
-The repository-level tests use `@SpringBootTest` and `@ExtendWith(SpringExtension.class)` to start the actual Spring application context and exercise the real JPA repositories.
+Persistence tests use `@SpringBootTest` and `@ExtendWith(SpringExtension.class)` to start the actual Spring application context and exercise the real JPA repositories.
 
-Unlike the service tests, these tests do **not** mock the repositories. They verify behavior across:
+Unlike service-layer unit tests, these tests do **not** mock repository dependencies. They verify behavior across:
 
 ```text
 JUnit Test
@@ -183,23 +364,40 @@ Spring Data JPA / Hibernate
 PostgreSQL
 ```
 
-This makes the persistence tests particularly useful for validating:
+These tests validate:
 
 * Entity-to-table mappings
-* Primary and foreign key relationships
+* Primary and foreign-key relationships
 * JPA inheritance mappings
 * Repository queries
-* Entity creation and deletion
+* Entity creation and retrieval
+* Entity deletion
 * Cascade and orphan-removal behavior
 * Persistence behavior across related entities
+* Database integrity constraints
 
-Repository deletion tests, for example, create actual persisted entities and verify that repository operations produce the expected database state.
+Repository deletion tests, for example, create actual persisted entities and verify that repository operations result in the expected database state.
+
+## Controller Integration Tests
+
+The REST API is also exercised through HTTP requests against the Spring controllers.
+
+Controller integration tests verify complete request and response behavior, including:
+
+* Request validation
+* HTTP status codes
+* Request DTO handling
+* Response DTO conversion
+* Error responses
+* Controller-to-service integration
+
+This provides coverage beyond isolated service or persistence behavior by testing the API boundary used by client applications.
 
 ## Regression Testing
 
 When a defect is identified, the preferred approach is to reproduce it with a test, correct the underlying implementation or mapping, and retain the test as a regression case.
 
-This has been particularly useful while modernizing the original codebase, where several tests and entity mappings were based on earlier versions of the service API.
+This approach has been particularly valuable during the modernization of the original codebase, where earlier implementations contained defects in entity relationships, validation, persistence behavior, and API handling.
 
 ## Running Tests
 
@@ -227,31 +425,89 @@ Gradle generates an HTML test report at:
 build/reports/tests/test/index.html
 ```
 
-## Current Coverage
+The test suite covers unit, persistence, and REST integration behavior and is used to validate both normal application flows and invalid or exceptional inputs.
 
-Test coverage is actively being rebuilt and expanded. Current work prioritizes:
+---
 
-1. Service-layer validation and business rules
-2. Entity creation and retrieval
-3. Repository persistence and deletion behavior
-4. Shopping cart and selected-item relationships
-5. Order workflows
-6. End-to-end REST integration testing
+# API Documentation
 
-The test suite should therefore be considered **actively evolving rather than complete**.
+The REST API is documented using **OpenAPI/Swagger** annotations.
 
-# Known Limitations
+Once the application is running, the generated API documentation can be accessed through the Swagger UI.
 
-Known gaps include:
+The API documentation describes:
 
-- Percentage fields (discount, commission) validate against negative values but not against unrealistic upper bounds
-- Password fields have no minimum length or complexity requirement
-- Some legacy repository/service methods contain naming inconsistencies inherited from earlier iterations of the project
+* Available REST endpoints
+* HTTP methods
+* Request bodies
+* Response types
+* Endpoint descriptions
+
+Swagger UI also provides an interactive interface for inspecting and exercising the available API operations.
+
+---
+
+# Technology Stack
+
+| Layer             | Technology                                   |
+| ----------------- | -------------------------------------------- |
+| Backend           | Spring Boot / Java                           |
+| Database          | PostgreSQL                                   |
+| Persistence       | Spring Data JPA / Hibernate                  |
+| Build Tool        | Gradle                                       |
+| API               | REST                                         |
+| API Documentation | OpenAPI / Swagger                            |
+| Testing           | JUnit 5, Mockito, Spring integration testing |
+| Frontend          | Vue.js                                       |
+| Containerization  | Docker                                       |
+
+---
+
+# Project Evolution
+
+The backend originated as part of the ECSE 321 — Introduction to Software Engineering course project at McGill University in Fall 2020.
+
+Since the original project, the backend has been independently maintained and substantially refactored.
+
+Major improvements include:
+
+* **Refactored the domain model** to enforce appropriate entity relationships and improve data integrity
+* **Added an `OrderItem` entity** to support checkout and preserve purchase-time order information
+* **Implemented shopping-cart checkout and order history**
+* **Added purchase-time snapshots** of price and artwork information to order items
+* **Refactored API endpoints** to use structured request bodies and request DTOs
+* **Added Bean Validation** to API request objects
+* **Refactored API responses** to use dedicated response DTOs rather than exposing JPA entities
+* **Added centralized global exception handling** with structured error responses
+* **Hardened service-layer validation**, replacing failure-prone null handling and unexpected exceptions with explicit application exceptions
+* **Improved data-integrity handling** across entity relationships and deletion operations
+* **Built a comprehensive automated test suite** covering unit, persistence, and controller integration behavior
+* **Added OpenAPI/Swagger documentation** to the REST API
+
+The current backend therefore represents a substantially refactored and extended version of the original course-project implementation.
+
+For the complete development history, see the [Project Evolution](../README.md#project-evolution) section of the README.
+
+---
+
+# Project Status
+
+**Backend:** Feature-complete and undergoing final deployment preparation.
+
+**Frontend:** The original Vue.js frontend remains separate from the backend and may require further modernization to align with the current API.
+
+**Next step:** Deploy the Spring Boot API to a hosted environment and make the API publicly accessible.
 
 ---
 
 # Future Improvements
 
-- Complete validation and test coverage across all remaining service methods
-- Enforce upper-bound checks on percentage-based fields
-- Expand integration testing across the full request lifecycle
+The primary remaining improvements are deployment and continued modernization rather than fundamental API functionality.
+
+Potential future work includes:
+
+* Deploy the Spring Boot API to a hosted environment
+* Make the REST API publicly accessible
+* Further modernize the original Vue.js frontend to align with the current API
+* Continue expanding automated testing as new functionality is introduced
+* Further refine API documentation and developer experience as the backend evolves
