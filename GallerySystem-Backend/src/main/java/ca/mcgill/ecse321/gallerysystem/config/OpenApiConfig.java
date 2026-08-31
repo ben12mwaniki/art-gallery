@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
+import java.util.Arrays;
 
 @Configuration
 public class OpenApiConfig {
@@ -32,7 +32,7 @@ public class OpenApiConfig {
                                                 .license(new License()
                                                                 .name("MIT License")
                                                                 .url("https://opensource.org/licenses/MIT")))
-                                .servers(List.of(
+                                .servers(Arrays.asList(
                                                 new Server()
                                                                 .url("http://localhost:" + serverPort)
                                                                 .description("Local Development Server"),
