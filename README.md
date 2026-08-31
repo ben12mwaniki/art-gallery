@@ -195,7 +195,7 @@ The API documentation describes the available endpoints, HTTP methods, request b
 
 ### Prerequisites
 
-* JDK 11
+* JDK 8
 * Docker for PostgreSQL, or a local PostgreSQL installation
 * Git
 
