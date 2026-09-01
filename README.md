@@ -4,6 +4,10 @@ A multi-tier art marketplace backend built with **Spring Boot, Java, and Postgre
 
 Art Gallery connects artists with customers, allowing artists to showcase and sell artwork while customers browse available pieces, manage a shopping cart, and place orders. The system is exposed as a REST API designed to support web and mobile clients.
 
+The deployed API is publicly accessible at:
+
+**[Online Gallery API](https://p01--art-gallery--95bbvq7j5jmw.code.run/)**
+
 This project was originally developed as a term project for **ECSE 321 - Introduction to Software Engineering** at McGill University. The project followed a complete software engineering lifecycle, encompassing requirements analysis, multi-tier architecture design, implementation, validation, and automated deployment executed through agile sprints.
 
 The original team consisted of:
