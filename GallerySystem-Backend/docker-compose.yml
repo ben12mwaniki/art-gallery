@@ -1,37 +1,29 @@
-
 services:
-  gallery-postgres:
-    container_name: gallery-postgres
-    image: postgres:16
-    restart: unless-stopped
-
-    environment:
-      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
-      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      POSTGRES_DB: gallerydb
-
-    ports:
-      - "5432:5432"
-
-    volumes:
-      - gallery_postgres_data:/var/lib/postgresql/data
-
   gallery-backend:
-    container_name: gallery-backend
+    build: .
     image: art-gallery-backend
-    restart: unless-stopped
-
+    ports:
+      - "${PORT}:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://gallery-postgres:5432/gallerydb
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-
-    ports:
-      - "8080:8080"
-
+      PORT: ${PORT}
     depends_on:
       - gallery-postgres
 
+  gallery-postgres:
+    container_name: gallery-postgres
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_DB: gallerydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - gallery_postgres_data:/var/lib/postgresql/data
+
 volumes:
   gallery_postgres_data:
-

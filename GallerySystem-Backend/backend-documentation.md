@@ -2,7 +2,7 @@
 
 > For installation instructions and running the application locally, see the [README](../README.md).
 >
-> For the project's development history, design changes, and evolution from the original codebase, see the [Project Evolution](../README.md#project-evolution) section.
+> For the project's development history, design changes, and evolution from the original codebase, see the [Project Evolution](../README.md#project-evolution) section of the project README.
 
 ---
 
@@ -16,9 +16,11 @@ The application allows:
 * Customers to browse available artwork, manage a shopping cart, and place orders
 * Administrators to manage platform-level information
 
-The backend has been substantially refactored from its original university-project implementation. The current implementation includes a refined domain model, structured request and response DTOs, service-layer validation, centralized exception handling, shopping-cart checkout, purchase history, and automated testing.
+The backend has been substantially refactored from its original university-project implementation. The current implementation includes a refined domain model, structured request and response DTOs, service-layer validation, centralized exception handling, shopping-cart checkout, purchase history, automated testing, OpenAPI/Swagger documentation, and Docker-based deployment.
 
-For a detailed history of these changes, see the [Project Evolution](../README.md#project-evolution) section of the project README.
+The API is currently deployed as a publicly accessible service on Northflank:
+
+**[Online Gallery API](https://p01--art-gallery--95bbvq7j5jmw.code.run/)**
 
 ---
 
@@ -27,19 +29,19 @@ For a detailed history of these changes, see the [Project Evolution](../README.m
 The application follows a layered backend architecture:
 
 ```text
-Vue Frontend
-      │
-      ▼
-REST Controller
-      │
-      ▼
-Service Layer
-      │
-      ▼
-Repository (DAO) Layer
-      │
-      ▼
-PostgreSQL Database
+Vue Frontend / Other Clients
+          │
+          ▼
+   REST Controller
+          │
+          ▼
+     Service Layer
+          │
+          ▼
+ Repository (DAO) Layer
+          │
+          ▼
+   PostgreSQL Database
 ```
 
 ![Architecture model](../assets/architecture%20model.png)
@@ -104,7 +106,7 @@ These relationships, together with cascading and orphan-removal behavior where a
 
 # Domain Model
 
-![Domain model](../assets/Final_domain_model.png)
+![Domain model](../assets/Final_domain_model.jpeg)
 
 The domain model represents the core marketplace workflow from artwork management and shopping-cart operations through checkout and order history.
 
@@ -445,6 +447,82 @@ The API documentation describes:
 
 Swagger UI also provides an interactive interface for inspecting and exercising the available API operations.
 
+The deployed API is publicly accessible at:
+
+**https://p01--art-gallery--95bbvq7j5jmw.code.run/**
+
+---
+
+# Containerization & Deployment
+
+The backend is containerized using **Docker**.
+
+The Docker configuration packages the Spring Boot application and its runtime dependencies into a portable container image. PostgreSQL is provided as a separate service during local development through Docker Compose.
+
+This creates a consistent development and deployment environment and avoids requiring developers to install and configure PostgreSQL directly on their machines.
+
+## Local Container Architecture
+
+The local environment consists of:
+
+```text
+Docker Compose
+     │
+     ├───────────────┐
+     ▼               ▼
+Spring Boot      PostgreSQL
+Container        Container
+     │               │
+     └───────┬───────┘
+             │
+             ▼
+          Port 8080
+```
+
+The standard local workflow is:
+
+```bash
+docker compose up
+```
+
+To stop the services:
+
+```bash
+docker compose down
+```
+
+To remove the database volume as well:
+
+```bash
+docker compose down -v
+```
+
+The Docker Compose configuration supplies the database connection information to the Spring Boot container through environment variables.
+
+Running the application directly with Gradle remains possible for development and debugging:
+
+```bash
+./gradlew bootRun
+```
+
+However, Docker Compose is the recommended standard setup for running the complete backend environment locally.
+
+## Production Deployment
+
+The backend is deployed using **Northflank** as a continuously running containerized service.
+
+Northflank builds and deploys the application's Docker image and provides the public networking required to expose the Spring Boot API. Northflank supports Dockerfile-based builds directly from connected Git repositories and provides runtime environment variables for deployment configuration.
+
+The production database is hosted separately from the application container. Database credentials and connection information are supplied through runtime environment variables rather than committed to the repository.
+
+The deployed API is available at:
+
+```text
+https://p01--art-gallery--95bbvq7j5jmw.code.run/
+```
+
+The current deployed service responds successfully at the root endpoint.
+
 ---
 
 # Technology Stack
@@ -459,7 +537,8 @@ Swagger UI also provides an interactive interface for inspecting and exercising 
 | API Documentation | OpenAPI / Swagger                            |
 | Testing           | JUnit 5, Mockito, Spring integration testing |
 | Frontend          | Vue.js                                       |
-| Containerization  | Docker                                       |
+| Containerization  | Docker / Docker Compose                      |
+| Hosting           | Northflank                                   |
 
 ---
 
@@ -483,6 +562,8 @@ Major improvements include:
 * **Improved data-integrity handling** across entity relationships and deletion operations
 * **Built a comprehensive automated test suite** covering unit, persistence, and controller integration behavior
 * **Added OpenAPI/Swagger documentation** to the REST API
+* **Containerized the backend and PostgreSQL development environment** using Docker and Docker Compose
+* **Deployed the backend API to Northflank**
 
 The current backend therefore represents a substantially refactored and extended version of the original course-project implementation.
 
@@ -492,22 +573,25 @@ For the complete development history, see the [Project Evolution](../README.md#p
 
 # Project Status
 
-**Backend:** Feature-complete and undergoing final deployment preparation.
+**Backend:** Feature-complete, containerized, tested, documented, and deployed as a publicly accessible API.
 
-**Frontend:** The original Vue.js frontend remains separate from the backend and may require further modernization to align with the current API.
+**Frontend:** The original Vue.js frontend remains separate from the backend and requires further modernization to align with the current API.
 
-**Next step:** Deploy the Spring Boot API to a hosted environment and make the API publicly accessible.
+**Deployment:** The Spring Boot API is hosted on Northflank and is publicly accessible.
+
+**API:** The core marketplace API — including artwork management, user management, shopping carts, checkout, and order history — is functional and deployed.
 
 ---
 
 # Future Improvements
 
-The primary remaining improvements are deployment and continued modernization rather than fundamental API functionality.
+The primary remaining work is focused on authentication, frontend modernization, and production-oriented improvements rather than fundamental backend functionality.
 
 Potential future work includes:
 
-* Deploy the Spring Boot API to a hosted environment
-* Make the REST API publicly accessible
-* Further modernize the original Vue.js frontend to align with the current API
-* Continue expanding automated testing as new functionality is introduced
-* Further refine API documentation and developer experience as the backend evolves
+* **Add authentication and authorization** for secure user authentication and role-based access control
+* **Further modernize the Vue.js frontend** to align with the current API
+* **Expand automated testing** as authentication and frontend/API integration are introduced
+* **Add production health checks and monitoring**
+* **Further refine API documentation** with more detailed endpoint descriptions and examples
+* **Improve deployment and operational configuration** as the application evolves toward a more production-ready system
