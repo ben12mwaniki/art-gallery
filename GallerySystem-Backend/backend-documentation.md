@@ -544,7 +544,7 @@ The current deployed service responds successfully at the root endpoint.
 
 # Project Evolution
 
-The backend originated as part of the ECSE 321 — Introduction to Software Engineering course project at McGill University in Fall 2020.
+The backend originated as part of the ECSE 321 — Introduction to Software Engineering course project at McGill University.
 
 Since the original project, the backend has been independently maintained and substantially refactored.
 
