@@ -4,7 +4,7 @@ A multi-tier art marketplace backend built with **Spring Boot, Java, and Postgre
 
 Art Gallery connects artists with customers, allowing artists to showcase and sell artwork while customers browse available pieces, manage a shopping cart, and place orders. The system is exposed as a REST API designed to support web and mobile clients.
 
-This project was originally developed as a term project for **ECSE 321 - Introduction to Software Engineering** at McGill University. The project followed a complete software engineering lifecycle, encompassing requirements analysis, multi‑tier architecture design, implementation, validation, and automated deployment executed through agile sprints.
+This project was originally developed as a term project for **ECSE 321 - Introduction to Software Engineering** at McGill University. The project followed a complete software engineering lifecycle, encompassing requirements analysis, multi-tier architecture design, implementation, validation, and automated deployment executed through agile sprints.
 
 The original team consisted of:
 
@@ -103,19 +103,19 @@ Validation errors include both a human-readable summary and field-level validati
 Art Gallery follows a layered backend architecture:
 
 ```text
-      Client (Web)
-        |
-        v
- REST Controller
-        |
-        v
-   Service Layer
-        |
-        v
- Repository (DAO) Layer
-        |
-        v
- PostgreSQL Database
+     Client (Web / Mobile)
+             |
+             v
+      REST Controller
+             |
+             v
+        Service Layer
+             |
+             v
+      Repository (DAO)
+             |
+             v
+       PostgreSQL Database
 ```
 
 The application separates:
@@ -177,6 +177,40 @@ Once the application is running, the generated API documentation can be accessed
 
 The API documentation describes the available endpoints, HTTP methods, request bodies, response types, and endpoint descriptions.
 
+The deployed API is publicly accessible at:
+
+**[Online Gallery API](https://p01--art-gallery--95bbvq7j5jmw.code.run/)**
+
+The root endpoint currently displays the application's online gallery response.
+
+## Deployment & Containerization
+
+The backend is containerized using **Docker**.
+
+The project includes a Dockerfile for building the Spring Boot application into a portable container image. PostgreSQL is also configured through Docker Compose for local development.
+
+The standard local workflow is therefore:
+
+```bash
+docker compose up
+```
+
+To stop the application and database:
+
+```bash
+docker compose down
+```
+
+This provides a consistent development environment without requiring a locally installed PostgreSQL server or manually configured database credentials.
+
+The application is hosted using **Northflank**. The deployed Spring Boot container runs as a continuously available service with PostgreSQL provided separately as a managed database service.
+
+The hosted API is available at:
+
+```text
+https://p01--art-gallery--95bbvq7j5jmw.code.run/
+```
+
 ## Technology Stack
 
 | Layer             | Technology                                   |
@@ -189,15 +223,18 @@ The API documentation describes the available endpoints, HTTP methods, request b
 | API Documentation | OpenAPI / Swagger                            |
 | Testing           | JUnit 5, Mockito, Spring integration testing |
 | Frontend          | Vue.js                                       |
-| Containerization  | Docker                                       |
+| Containerization  | Docker / Docker Compose                      |
+| Hosting           | Northflank                                   |
 
 ## Running Locally
 
 ### Prerequisites
 
-* JDK 8
-* Docker for PostgreSQL, or a local PostgreSQL installation
+* Docker
+* Docker Compose
 * Git
+
+A local JDK is not required for the standard Docker-based workflow.
 
 ### Setup
 
@@ -205,27 +242,30 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/ben12mwaniki/art-gallery.git
-cd art-gallery/GallerySystem-Backend
+cd art-gallery
 ```
 
-Start a PostgreSQL instance matching the expected configuration:
+The backend and frontend are maintained as separate project directories. The backend's Docker configuration is located under:
+
+```text
+GallerySystem-Backend/
+```
+
+### Running the Application with Docker Compose
+
+Navigate to the backend directory:
 
 ```bash
-docker run --name gallery-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=artgallery-db \
-  -p 5432:5432 \
-  -d postgres:15
+cd GallerySystem-Backend
 ```
 
-### Running the Application
-
-Start the Spring Boot server using the Gradle wrapper:
+Start the application and PostgreSQL database:
 
 ```bash
-./gradlew bootRun
+docker compose up
 ```
+
+Docker Compose starts the required services and connects the Spring Boot application to PostgreSQL using the configured container environment.
 
 The API will be available at:
 
@@ -233,7 +273,31 @@ The API will be available at:
 http://localhost:8080
 ```
 
-The application will create the required database tables automatically according to the configured JPA settings.
+Swagger UI is available through the local application once the backend has started.
+
+To stop the services:
+
+```bash
+docker compose down
+```
+
+To stop the services and remove the database volume as well:
+
+```bash
+docker compose down -v
+```
+
+> **Warning:** Removing the volume deletes the local PostgreSQL data stored by Docker Compose.
+
+### Alternative Local Development
+
+Running the backend directly with Gradle remains useful for development, debugging, and testing:
+
+```bash
+./gradlew bootRun
+```
+
+However, Docker Compose is the recommended standard setup because it provides both the application and its PostgreSQL dependency in a reproducible environment.
 
 ## Project Evolution
 
@@ -252,16 +316,26 @@ Major backend improvements include:
 * Improved data-integrity handling across entity relationships and deletion operations
 * Built a comprehensive automated test suite covering unit, persistence, and controller integration behavior
 * Added OpenAPI/Swagger API documentation
+* Containerized the backend and PostgreSQL development environment using Docker and Docker Compose
+* Deployed the backend API to Northflank
 
-The project is currently being prepared for deployment as a hosted backend API.
+The backend API is now **feature-complete and deployed as a functional hosted service**. Further development is focused primarily on authentication, frontend modernization, and additional production-oriented improvements.
 
 ## Project Status
 
-**Backend:** Feature-complete and undergoing final deployment preparation.
+**Backend:** Feature-complete, containerized, tested, documented, and deployed as a publicly accessible API.
 
-**Frontend:** Existing Vue.js client remain part of the original project and may require further modernization to align with the current backend API.
+**Frontend:** The existing Vue.js client remains part of the original project and requires further modernization to align with the current backend API.
 
-**Next step:** Deploy the Spring Boot API to a hosted environment and make the API publicly accessible.
+**Hosting:** The Spring Boot API is deployed on Northflank and is publicly accessible.
+
+**Next steps:**
+
+1. **Add authentication and authorization** — introduce secure user authentication and role-based access control for artists, customers, and administrators.
+2. **Evolve the frontend** — modernize the Vue.js client and integrate it fully with the current REST API.
+3. **Continue automated testing** — expand coverage as authentication and frontend/API integration are introduced.
+4. **Improve production readiness** — add health checks, more robust deployment configuration, monitoring, and other operational improvements as the application matures.
+5. **Refine API documentation** — continue improving OpenAPI descriptions and examples as the API evolves.
 
 ## Contributors
 
