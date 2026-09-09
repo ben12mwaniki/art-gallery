@@ -403,6 +403,16 @@ This approach has been particularly valuable during the modernization of the ori
 
 ## Running Tests
 
+### Test Database Requirement
+
+Before running the integration and persistence tests, ensure a PostgreSQL database is available and running with the connection properties defined in:
+
+```text
+GallerySystem-Backend/src/test/resources/application-test.properties
+````
+
+These tests rely on that database being reachable; unit tests do not require a database.
+
 Run the complete test suite with:
 
 ```bash
@@ -428,6 +438,7 @@ build/reports/tests/test/index.html
 ```
 
 The test suite covers unit, persistence, and REST integration behavior and is used to validate both normal application flows and invalid or exceptional inputs.
+
 
 ---
 
@@ -538,7 +549,7 @@ The current deployed service responds successfully at the root endpoint.
 | Testing           | JUnit 5, Mockito, Spring integration testing |
 | Frontend          | Vue.js                                       |
 | Containerization  | Docker / Docker Compose                      |
-| Hosting           | Northflank                                   |
+| Hosting           | Northflank(Backend), Netlify (Frontend)      |
 
 ---
 
