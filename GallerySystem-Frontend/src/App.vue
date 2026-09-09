@@ -1,86 +1,202 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+const API_URL = 'https://p01--art-gallery--95bbvq7j5jmw.code.run'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div class="container">
+    <div class="card">
+      <span class="badge">REST API · Spring Boot</span>
 
-    <div class="wrapper">
-      
-      <HelloWorld msg="You did it!" />
+```
+  <h1>Online Art Gallery API</h1>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+  <p class="description">
+    A RESTful backend for an online art marketplace connecting artists
+    and customers. The API provides artwork management, shopping carts,
+    checkout, orders, and user management.
+  </p>
+
+  <div class="buttons">
+    <a
+      class="button primary"
+      :href="`${API_URL}/swagger-ui/index.html`"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Open API Documentation
+    </a>
+
+    <a
+      class="button secondary"
+      href="https://github.com/ben12mwaniki/art-gallery"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View on GitHub
+    </a>
+  </div>
+
+  <div class="section">
+    <h2>API Capabilities</h2>
+
+    <div class="features">
+      <div class="feature">
+        <strong>Artwork</strong>
+        Create, browse, and manage artwork listings.
+      </div>
+
+      <div class="feature">
+        <strong>Shopping Cart</strong>
+        Manage cart items and requested quantities.
+      </div>
+
+      <div class="feature">
+        <strong>Checkout</strong>
+        Convert a customer's cart into a completed order.
+      </div>
+
+      <div class="feature">
+        <strong>Order History</strong>
+        Retrieve completed purchases and purchase-time information.
+      </div>
     </div>
-  </header>
+  </div>
 
-  <RouterView />
+  <footer>
+    Built with Spring Boot, Java, PostgreSQL, and Docker.
+  </footer>
+</div>
+```
+
+  </div>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+* {
+  box-sizing: border-box;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 80px 24px;
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+.card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 48px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
+.badge {
   display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #f0f0ed;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
-nav a:first-of-type {
-  border: 0;
+h1 {
+  margin: 0 0 16px;
+  font-size: 42px;
+  line-height: 1.15;
+  letter-spacing: -1px;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+.description {
+  max-width: 700px;
+  color: #666;
+  font-size: 18px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+
+.button {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 7px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.8;
+}
+
+.primary {
+  background: #222;
+  color: white;
+}
+
+.secondary {
+  background: #f0f0ed;
+  color: #222;
+}
+
+.section {
+  border-top: 1px solid #e5e5e5;
+  padding-top: 28px;
+}
+
+.section h2 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.feature {
+  padding: 16px;
+  background: #f7f7f5;
+  border-radius: 8px;
+  color: #555;
+}
+
+.feature strong {
+  display: block;
+  color: #222;
+  margin-bottom: 5px;
+}
+
+footer {
+  margin-top: 32px;
+  color: #888;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 40px 16px;
   }
 
-  .logo {
-    margin: 0 2rem 0 0;
+  .card {
+    padding: 30px 24px;
   }
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
+  h1 {
+    font-size: 34px;
   }
 
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
+  .features {
+    grid-template-columns: 1fr;
   }
 }
 </style>
