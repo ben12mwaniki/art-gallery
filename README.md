@@ -6,7 +6,7 @@ Art Gallery connects artists with customers, allowing artists to showcase and se
 
 The deployed API is publicly accessible at:
 
-**[Online Gallery API](https://p01--art-gallery--95bbvq7j5jmw.code.run/)**
+**[Online Gallery API](https://artgalleryapi.netlify.app/)**
 
 This project was originally developed as a term project for **ECSE 321 - Introduction to Software Engineering** at McGill University. The project followed a complete software engineering lifecycle, encompassing requirements analysis, multi-tier architecture design, implementation, validation, and automated deployment executed through agile sprints.
 
@@ -183,7 +183,7 @@ The API documentation describes the available endpoints, HTTP methods, request b
 
 The deployed API is publicly accessible at:
 
-**[Online Gallery API](https://p01--art-gallery--95bbvq7j5jmw.code.run/)**
+**[Online Gallery API](https://artgalleryapi.netlify.app/)**
 
 The root endpoint currently displays the application's online gallery response.
 
@@ -228,7 +228,7 @@ https://p01--art-gallery--95bbvq7j5jmw.code.run/
 | Testing           | JUnit 5, Mockito, Spring integration testing |
 | Frontend          | Vue.js                                       |
 | Containerization  | Docker / Docker Compose                      |
-| Hosting           | Northflank                                   |
+| Hosting           | Northflank (Backend), Netlify (Frontend)     |                                   |
 
 ## Running Locally
 
